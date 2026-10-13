@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Telão</title>
+<meta name="description" content="Crie uma sala, compartilhe só a tela e mande o link no Discord.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0e0d0c;--panel:#181614;--line:#2c2926;--fg:#f4efe6;--dim:#948c80;--hot:#ff5a36;--ok:#7be08a}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 "Bricolage Grotesque",system-ui,sans-serif;min-height:100dvh;display:flex;flex-direction:column}
+header{padding:20px 24px;display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:-.02em}
+header i{width:12px;height:12px;border-radius:50%;background:var(--hot);box-shadow:0 0 14px var(--hot)}
+main{flex:1;display:grid;place-items:center;padding:24px}
+.card{width:min(520px,100%);display:grid;gap:20px}
+h1{font-size:clamp(40px,9vw,64px);line-height:.95;letter-spacing:-.04em;font-weight:800}
+h1 em{font-style:normal;color:var(--hot)}
+p{color:var(--dim)}
+button,.copy{font:inherit;font-weight:600;cursor:pointer;border:0;border-radius:12px;padding:14px 20px;background:var(--hot);color:#160803;transition:transform .12s,filter .12s}
+button:hover{filter:brightness(1.1)}button:active{transform:scale(.97)}
+button.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+button[disabled]{opacity:.5;cursor:default}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.link{display:flex;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 6px 6px 14px;align-items:center}
+.link code{flex:1;font:500 14px "JetBrains Mono",monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.link button{padding:8px 14px}
+.status{font:500 13px "JetBrains Mono",monospace;color:var(--dim)}
+.status b{color:var(--ok)}
+.hidden{display:none!important}
+#room{position:fixed;inset:0;display:flex;flex-direction:column}
+#top{display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+#top .link{flex:1;min-width:220px}
+#grid{flex:1;display:grid;gap:8px;padding:8px;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));grid-auto-rows:1fr;min-height:0}
+.tile{position:relative;background:#000;border-radius:12px;overflow:hidden;border:1px solid var(--line);cursor:zoom-in}
+.tile video{width:100%;height:100%;object-fit:contain;display:block}
+.tile span{position:absolute;left:10px;bottom:8px;font:500 12px "JetBrains Mono",monospace;background:#000a;padding:2px 8px;border-radius:6px}
+#empty{place-self:center;grid-column:1/-1;color:var(--dim);text-align:center}
+</style>
+</head>
+<body>
+<header><i></i>Telão</header>
+
+<main id="home">
+  <section class="card">
+    <h1>Suas telas,<br>num <em>link</em>.</h1>
+    <p>Crie uma sala e mande o link no Discord. Até 4 pessoas compartilham a tela ao mesmo tempo, só vídeo, sem conta.</p>
+    <div class="row"><button id="create">Criar sala</button></div>
+  </section>
+</main>
+
+<div id="room" class="hidden">
+  <div id="top">
+    <div class="link"><code id="url"></code><button id="copy">Copiar link</button></div>
+    <button id="share">Compartilhar minha tela</button>
+    <button id="stop" class="ghost hidden">Parar</button>
+    <div class="status" id="status"></div>
+  </div>
+  <div id="grid"><p id="empty">Ninguém compartilhando ainda.</p></div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const ALPHA = "abcdefghjkmnpqrstuvwxyz23456789";
+const PREFIX = "telao-", MAX = 4;
+let refresh = () => {};
+const rand = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => ALPHA[b % ALPHA.length]).join("");
+
+const hash = location.hash.slice(1).toLowerCase();
+if (hash) join(hash); else $("create").onclick = () => create(0);
+
+function create(attempt) {
+  const code = rand(6);
+  start(code, true, () => attempt < 5 ? create(attempt + 1) : alert("Não consegui criar a sala."));
+}
+function join(code) { start(code, false); }
+
+function start(code, isHub, onTaken) {
+  const hubId = PREFIX + code;
+  const peer = isHub ? new Peer(hubId) : new Peer();
+  const conns = new Map();     // peerId -> DataConnection
+  const calls = new Map();     // peerId -> outgoing MediaConnection
+  const sharers = new Set();   // hub only: peerIds currently sharing (incl. hub)
+  let stream = null, myId = null;
+
+  peer.on("error", e => {
+    if (e.type === "unavailable-id" && isHub) return onTaken?.();
+    if (e.type === "peer-unavailable") return fail("Sala não encontrada. Alguém precisa estar com ela aberta.");
+    if (e.type !== "disconnected") fail("Erro: " + e.type);
+  });
+  peer.on("open", id => {
+    myId = id;
+    enterRoom(code);
+    if (isHub) status(); else link(hubId);
+  });
+  peer.on("connection", c => wire(c));
+  peer.on("call", call => {
+    call.answer();
+    call.on("stream", s => addTile(call.peer, s));
+    call.on("close", () => dropTile(call.peer));
+  });
+
+  function link(id) {
+    const c = peer.connect(id, { reliable: true });
+    wire(c);
+  }
+  function wire(c) {
+    c.on("open", () => {
+      conns.set(c.peer, c);
+      if (isHub && c.peer !== myId) {
+        c.send({ t: "peers", ids: [...conns.keys()].filter(i => i !== c.peer) });
+      }
+      if (stream) callPeer(c.peer);
+      status();
+    });
+    c.on("data", m => onMsg(c, m));
+    c.on("close", () => { conns.delete(c.peer); calls.delete(c.peer); sharers.delete(c.peer); dropTile(c.peer); status(); });
+  }
+  function onMsg(c, m) {
+    if (m.t === "peers") m.ids.forEach(id => { if (!conns.has(id) && id !== myId) link(id); });
+    else if (m.t === "want" && isHub) {
+      const ok = sharers.size < MAX || sharers.has(c.peer);
+      if (ok) sharers.add(c.peer);
+      c.send({ t: ok ? "grant" : "deny" }); status();
+    }
+    else if (m.t === "stop") { sharers.delete(c.peer); dropTile(c.peer); status(); }
+    else if (m.t === "grant") begin();
+    else if (m.t === "deny") alert(`Já tem ${MAX} pessoas compartilhando.`);
+  }
+  function callPeer(id) {
+    if (!stream) return;
+    const call = peer.call(id, stream);
+    calls.set(id, call);
+    call.on("stream", () => {});
+    setTimeout(() => call.peerConnection?.getSenders().forEach(s => {
+      if (s.track?.kind !== "video") return;
+      const p = s.getParameters(); p.encodings = p.encodings?.length ? p.encodings : [{}];
+      p.encodings[0].maxBitrate = 3_000_000; p.degradationPreference = "maintain-resolution";
+      s.setParameters(p).catch(() => {});
+    }), 500);
+  }
+
+  $("share").onclick = async () => {
+    if (isHub) {
+      if (sharers.size >= MAX) return alert(`Já tem ${MAX} pessoas compartilhando.`);
+      sharers.add(myId); return begin();
+    }
+    const hub = conns.get(hubId); hub ? hub.send({ t: "want" }) : alert("Conectando… tente de novo.");
+  };
+  async function begin() {
+    try { stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30 } }, audio: false }); }
+    catch { if (isHub) sharers.delete(myId); else conns.get(hubId)?.send({ t: "stop" }); return; }
+    const t = stream.getVideoTracks()[0];
+    t.contentHint = "detail"; t.onended = stop;
+    $("share").classList.add("hidden"); $("stop").classList.remove("hidden");
+    addTile("me", stream, true);
+    conns.forEach((_, id) => callPeer(id));
+    status();
+  }
+  $("stop").onclick = stop;
+  function stop() {
+    if (!stream) return;
+    stream.getTracks().forEach(t => t.stop()); stream = null;
+    calls.forEach(c => c.close()); calls.clear();
+    conns.forEach(c => c.send({ t: "stop" }));
+    sharers.delete(myId); dropTile("me");
+    $("stop").classList.add("hidden"); $("share").classList.remove("hidden");
+    status();
+  }
+  function status() {
+    const n = conns.size + 1, s = document.querySelectorAll(".tile").length;
+    $("status").innerHTML = `<b>●</b> ${n} na sala · ${s}/${MAX} compartilhando`;
+  }
+  function fail(msg) { $("empty").textContent = msg; }
+  refresh = status;
+}
+
+function enterRoom(code) {
+  const url = `${location.origin}${location.pathname}#${code}`;
+  history.replaceState(null, "", "#" + code);
+  $("home").classList.add("hidden"); $("room").classList.remove("hidden");
+  $("url").textContent = url;
+  $("copy").onclick = async () => { await navigator.clipboard.writeText(url); $("copy").textContent = "Copiado"; setTimeout(() => $("copy").textContent = "Copiar link", 1500); };
+}
+function addTile(id, stream, mine) {
+  let t = document.querySelector(`[data-id="${id}"]`);
+  if (!t) {
+    t = document.createElement("div"); t.className = "tile"; t.dataset.id = id;
+    t.innerHTML = `<video autoplay playsinline muted></video><span>${mine ? "você" : "tela " + id.slice(0, 4)}</span>`;
+    t.onclick = () => document.fullscreenElement ? document.exitFullscreen() : t.requestFullscreen();
+    $("grid").appendChild(t);
+  }
+  const v = t.querySelector("video"); v.srcObject = stream; v.play().catch(() => {});
+  $("empty").classList.add("hidden");
+  refresh();
+}
+function dropTile(id) {
+  document.querySelector(`[data-id="${id}"]`)?.remove();
+  if (!document.querySelector(".tile")) $("empty").classList.remove("hidden");
+  refresh();
+}
+</script>
+</body>
+</html>
