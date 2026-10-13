@@ -217,6 +217,20 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
 .result.win{color:#7a0010;background:#ffd23f;box-shadow:0 0 40px #ffd23f}
 .result.lose{color:#fff;background:#111;rotate:-3deg}
 .coin{position:absolute;top:0;font-size:clamp(26px,3vw,42px)}
+.alarm{position:absolute;inset:0;background:radial-gradient(circle,transparent 30%,#ff000088 100%)}
+@media (prefers-reduced-motion:no-preference){.alarm{animation:alarm .5s steps(2) infinite}}
+@keyframes alarm{50%{opacity:.2}}
+.cobrou{position:absolute;left:50%;top:14%;translate:-50% 0;font:900 clamp(48px,9vw,130px)/.85 var(--poster);text-transform:uppercase;text-align:center;color:#fff;background:#d00;padding:8px 22px;box-shadow:8px 8px 0 #000;white-space:nowrap}
+.recibo{position:absolute;left:50%;top:6%;translate:-50% 0;width:min(360px,86vw);background:#fbfbf4;color:#222;font:15px/1.45 "Courier New",monospace;padding:20px 22px 30px;box-shadow:0 20px 60px #000a;
+  -webkit-mask:linear-gradient(#000 0 0) top/100% calc(100% - 12px) no-repeat,conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/16px 12px repeat-x}
+.recibo h4{font:900 26px/1 var(--poster);text-transform:uppercase;text-align:center}
+.recibo small{display:block;text-align:center;font-size:12px}
+.recibo hr{border:0;border-top:2px dashed #999;margin:10px 0}
+.recibo ul{list-style:none;padding:0;margin:0}
+.recibo li,.recibo .tot{display:flex;justify-content:space-between;gap:12px}
+.recibo .tot{font-size:18px;font-weight:700}
+.recibo b{font-weight:700}
+.recibo .bye{text-align:center}
 #room.tiger #grid{filter:saturate(1.35) sepia(.2)}
 #room.pod #grid{animation:podhue 2.6s linear infinite,beat .47s ease-in-out infinite}
 #room.weed #grid{animation:baked 7s ease-in-out infinite;filter:url(#wobble) saturate(1.5) contrast(.92)}
@@ -440,7 +454,7 @@ function start(code) {
       else if (m.t === "combo") playCombo(m.ks, c.peer);
       else if (m.t === "react") showReact(fromWire(m.target), m.e, c.peer);
       else if (m.t === "throw") landThrow(fromWire(m.target), m.item, m.x, m.y, c.peer);
-      else if (m.t === "mode") startMode(m.mode, m.track, c.peer, m.reels);
+      else if (m.t === "mode") startMode(m.mode, m.track, c.peer, m.reels, m.cobra);
     });
     c.on("close", () => { conns.delete(c.peer); calls.delete(c.peer); names.delete(c.peer); dropTile(c.peer); });
   }
@@ -922,6 +936,15 @@ function sfx(kind) {
       o.connect(lp).connect(g).connect(out); o.start(t0 + at); o.stop(t0 + at + len);
     });
   }
+  else if (kind === "siren") {
+    const o = ac.createOscillator(), g = ac.createGain(); o.type = "square";
+    for (let i = 0; i < 6; i++) { o.frequency.setValueAtTime(650, t0 + i * .5); o.frequency.linearRampToValueAtTime(1250, t0 + i * .5 + .25); o.frequency.linearRampToValueAtTime(650, t0 + i * .5 + .5); }
+    g.gain.value = .12; o.connect(g).connect(out); o.start(t0); o.stop(t0 + 3);
+  }
+  else if (kind === "printer") {
+    for (let i = 0; i < 26; i++) noise(.07, "bandpass", 2400 + (i % 2) * 600, .5, i * .1);
+    thump(90, 90, 2.6, .05);
+  }
   else if (kind === "tick") { out.gain.value = .9; noise(.02, "highpass", 3000, 1.2); thump(1800, 1200, .03, .35); }
   else if (kind === "tickhi") { out.gain.value = 1; noise(.02, "highpass", 3500, 1.4); thump(2600, 1800, .04, .5); }
   else if (kind === "tomate") { noise(.4, "lowpass", 900, 1.3); thump(170, 45, .28, .9); }
@@ -1034,7 +1057,7 @@ const MODES = {
 };
 const SLOTS = ["🐯", "🧧", "💰", "🍊", "🔔"];
 const MODE_MS = 15000;
-let mode = null, modeEnd = 0, modeAudio = [], lastMode = new Map();
+let mode = null, modeEnd = 0, modeAudio = [], lastMode = new Map(), tigerLosses = 0, sucked = [];
 document.querySelectorAll(".mode").forEach(b => b.onclick = () => fireMode(b.dataset.mode));
 
 function fireMode(name) {
@@ -1043,10 +1066,12 @@ function fireMode(name) {
   // The sender rolls the slot so everyone sees the same result. Mostly you lose, like the real thing.
   const reels = Math.random() < .2 ? [0, 0, 0] : (() => { let r; do r = [0, 1, 2].map(() => Math.floor(Math.random() * SLOTS.length)); while (r[0] === r[1] && r[1] === r[2]); return r; })();
   const msg = { t: "mode", mode: name, track, reels };
+  // Every third loss the tiger comes to collect. Everyone in the room counts the same losses.
+  if (name === "tiger" && !reels.every(r => r === 0) && (tigerLosses + 1) % 3 === 0) msg.cobra = Math.floor(Math.random() * 1e9);
   broadcast(msg);
-  startMode(name, track, "me", reels);
+  startMode(name, track, "me", reels, msg.cobra);
 }
-function startMode(name, track, from, reels) {
+function startMode(name, track, from, reels, cobra) {
   const m = MODES[name]; if (!m || !m.tracks.includes(track) || mode) return;
   const now = Date.now();
   if (from !== "me" && now - (lastMode.get(from) || 0) < 15000) return;
@@ -1068,11 +1093,13 @@ function startMode(name, track, from, reels) {
     if (m.intro) { play(m.intro, 0); play(track, 2600); } else play(track, 0);
   }
   haze.start({ pod: 0, weed: 1, tiger: 2 }[name]);
-  props(name, reels);
+  if (name === "tiger" && Array.isArray(reels) && !reels.every(r => r === 0)) tigerLosses++;
+  props(name, reels, Number.isInteger(cobra) ? cobra : null);
   setTimeout(stopMode, MODE_MS);
 }
 function stopMode() {
   if (!mode) return;
+  unsuck();
   $("room").classList.remove(mode);
   modeAudio.forEach(a => { const fade = setInterval(() => { a.volume = Math.max(0, a.volume - .08); if (!a.volume) { a.pause(); clearInterval(fade); } }, 80); });
   modeAudio = []; mode = null;
@@ -1084,7 +1111,7 @@ function stopMode() {
 
 // Pod mode: a giant pod hits to the beat while more pods fly across the room.
 // 4:20 mode: Snoop Dogg dances in from the sides.
-function props(name, reels) {
+function props(name, reels, cobra) {
   const box = $("modeFx"); box.replaceChildren(); box.classList.remove("out");
   const img = (src, cls) => { const i = new Image(); i.src = src; i.className = cls; i.alt = ""; box.append(i); return i; };
   if (name === "pod") {
@@ -1102,7 +1129,7 @@ function props(name, reels) {
     };
     fly();
   } else if (name === "tiger") {
-    slot(box, Array.isArray(reels) && reels.length === 3 && reels.every(r => Number.isInteger(r) && r >= 0 && r < SLOTS.length) ? reels : [1, 2, 3]);
+    slot(box, Array.isArray(reels) && reels.length === 3 && reels.every(r => Number.isInteger(r) && r >= 0 && r < SLOTS.length) ? reels : [1, 2, 3], cobra);
   } else {
     [[.5, "", 0], [.12, " mirror", 450], [.88, " mirror", 900]].forEach(([x, cls, delay], i) => {
       const s = img("img/snoop.webp", "snoop" + cls);
@@ -1123,7 +1150,7 @@ function props(name, reels) {
   }
 }
 
-function slot(box, reels) {
+function slot(box, reels, cobra) {
   const wrap = document.createElement("div"); wrap.className = "tigre";
   wrap.innerHTML = `<img src="img/tigrinho.webp" alt=""><div class="machine"><div class="reels"></div><div class="saldo">Saldo: R$ 0,00</div></div>`;
   box.append(wrap);
@@ -1146,8 +1173,57 @@ function slot(box, reels) {
     wrap.querySelector(".machine").append(res);
     res.animate([{ transform: "scale(.3) rotate(-8deg)", opacity: 0 }, { transform: "scale(1.15) rotate(3deg)", opacity: 1, offset: .6 }, { transform: "scale(1)" }], { duration: 500 });
     wrap.querySelector(".saldo").textContent = win ? "Saldo: R$ 999.999,99 (de mentira)" : "Saldo: R$ 0,00. Era só um meme.";
-    if (win) { sfx("coins"); rain(box); } else sfx("trombone");
+    if (win) { sfx("coins"); rain(box); } else if (cobra === null) sfx("trombone");
+    else setTimeout(() => cobranca(box, wrap, cobra), 700);
   }, 2400 + 2 * 900 + 300);
+}
+/* ---------- third loss: the tiger collects. The room gets sucked into its mouth and a receipt prints. ---------- */
+const DIVIDAS = [
+  ["Rim esquerdo", 12000], ["PS5 da sua irmã", 3899], ["Skin do LoL", 89.9], ["Dignidade", .01], ["Carro do seu pai", 25000],
+  ["Pix do aluguel", 1450], ["Cartão da sua mãe", 2300], ["Alma (usada)", 7.5], ["Cadeira gamer", 1199], ["Bicicleta do vizinho", 650],
+  ["Vale-refeição de março", 600], ["Herança da vó", 18000], ["Cachorro (caramelo)", 350], ["Conta do Netflix da família", 55.9],
+];
+const brl = v => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+function seeded(seed) { let x = seed >>> 0 || 1; return () => (x = (x * 1664525 + 1013904223) >>> 0) / 4294967296; }
+function cobranca(box, wrap, seed) {
+  if (mode !== "tiger") return;
+  const rnd = seeded(seed);
+  modeAudio.forEach(a => a.volume = Math.min(a.volume, memeVol * .3));
+  sfx("siren");
+  if (!audio.deaf && memeVol > 0) { const v = new Audio(memeUrl("tigrinho-vai-te-pegar")); v.volume = memeVol; v.play().catch(() => {}); modeAudio.push(v); }
+  const alarm = document.createElement("div"); alarm.className = "alarm"; box.prepend(alarm);
+  const banner = document.createElement("div"); banner.className = "cobrou"; banner.textContent = "O tigrinho cobrou";
+  box.append(banner);
+  banner.animate([{ transform: "scale(3) rotate(-12deg)", opacity: 0 }, { transform: "scale(1) rotate(-4deg)", opacity: 1 }], { duration: 350, easing: "cubic-bezier(.2,1.5,.4,1)" });
+  // the tiger opens wide and the whole room goes down the drain
+  wrap.querySelector("img").animate([{ transform: "scale(1)" }, { transform: "scale(2.4)" }], { duration: 2400, easing: "ease-in", fill: "forwards" });
+  wrap.querySelector(".machine").animate([{ opacity: 1 }, { opacity: 0 }], { duration: 600, fill: "forwards" });
+  sucked = ["top", "grid", "side"].map(id => $(id).animate(
+    [{ transform: "none", filter: "none" }, { transform: `rotate(${id === "side" ? -600 : 600}deg) scale(0)`, filter: "blur(4px)" }],
+    { duration: 2300, delay: 400, easing: "cubic-bezier(.55,0,.9,.4)", fill: "forwards" }));
+  setTimeout(() => {
+    if (mode !== "tiger") return;
+    wrap.animate([{ transform: "scale(1)", opacity: 1 }, { transform: "scale(0) rotate(90deg)", opacity: 0 }], { duration: 500, fill: "forwards" });
+    banner.remove();
+    const pool = DIVIDAS.slice(), items = [];
+    for (let i = 0; i < 6; i++) items.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
+    const total = items.reduce((a, [, v]) => a + v, 0);
+    const r = document.createElement("div"); r.className = "recibo";
+    r.innerHTML = `<h4>Tigrinho Bet Ltda.</h4><small>CNPJ 24.024.024/0001-24</small><hr><ul></ul><hr>
+      <p class="tot"><span>Total devido</span><b></b></p><p>Nome no Serasa ........ <b>Confirmado</b></p><p>Forma de pagamento .... <b>Seu PC</b></p><hr><p class="bye">Volte sempre! 🐯</p>`;
+    for (const [what, v] of items) { const li = document.createElement("li"); li.innerHTML = "<span></span><b></b>"; li.querySelector("span").textContent = what; li.querySelector("b").textContent = brl(v); r.querySelector("ul").append(li); }
+    r.querySelector(".tot b").textContent = brl(total);
+    box.append(r);
+    r.animate([{ clipPath: "inset(0 0 100% 0)", transform: "translateY(-30px)" }, { clipPath: "inset(0 0 0 0)", transform: "translateY(0)" }], { duration: 2600, easing: "steps(26)", fill: "forwards" });
+    sfx("printer");
+  }, 2900);
+  setTimeout(() => { if (mode === "tiger") { alarm.remove(); unsuck(true); } }, 11800);
+}
+function unsuck(animate) {
+  if (!sucked.length) return;
+  const anims = sucked; sucked = [];
+  if (!animate) return anims.forEach(a => a.cancel());
+  anims.forEach(a => { a.reverse(); a.onfinish = () => a.cancel(); });
 }
 function rain(box) {
   for (let i = 0; i < 60; i++) setTimeout(() => {
