@@ -63,22 +63,23 @@ button:active{transform:translateY(1px)}
 .quiet{background:transparent;color:var(--giz);box-shadow:inset 0 0 0 2px var(--noite2)}
 .quiet:hover{box-shadow:inset 0 0 0 2px var(--giz2)}
 .quiet[aria-pressed=true]{background:var(--rosa);box-shadow:none;color:#fff}
-.audio{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--giz2);cursor:pointer;user-select:none}
-.audio input{accent-color:var(--rosa);width:16px;height:16px}
+.note{font-size:13px;color:var(--giz2);max-width:34ch;line-height:1.3}
 
 #grid{display:grid;gap:10px;padding:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));grid-auto-rows:1fr;min-height:0}
 .tile{position:relative;background:#000;border-radius:4px;overflow:hidden;cursor:zoom-in;min-height:0}
 .tile video{width:100%;height:100%;object-fit:contain;display:block}
 .tile .name{position:absolute;left:0;bottom:0;font:800 18px/1 var(--poster);text-transform:uppercase;background:var(--papel);color:var(--tinta);padding:6px 10px 5px}
 .tile .ctl{position:absolute;right:8px;bottom:8px;display:flex;gap:8px;align-items:center;background:var(--tinta);border-radius:6px;padding:4px 10px 4px 4px;opacity:0;transition:opacity .15s;cursor:default}
-.tile:hover .ctl,.tile:focus-within .ctl,.tile .ctl.muted{opacity:1}
+.tile .ctl:not(.bare),.tile:hover .ctl,.tile:focus-within .ctl{opacity:1}
+.tile .ctl.muted input{opacity:.45}
+.tile .ctl .nosound{font-size:12px;color:var(--giz2);padding:0 4px 0 6px}
 .tile .ctl input{width:96px}
 .tile .ctl.bare{padding-right:4px}
 
 /* theater: one screen big, the rest in a strip below, sidebar out of the way */
 #theater[aria-pressed=true]{background:var(--papel);color:var(--tinta);box-shadow:none}
 #room.theater{grid-template-columns:1fr;background:#000}
-#room.theater #side,#room.theater .link,#room.theater .audio{display:none}
+#room.theater #side,#room.theater .link,#room.theater .note{display:none}
 #room.theater #top{background:transparent;padding:8px 10px;position:absolute;top:0;right:0;left:0;z-index:2;justify-content:flex-end;opacity:0;transition:opacity .2s}
 #room.theater #top:hover,#room.theater #top:focus-within{opacity:1}
 @media (hover:none){#room.theater #top{opacity:1;position:static}}
@@ -143,7 +144,7 @@ input[type=range]{accent-color:var(--papel);min-width:0}
     <div class="link"><span id="url"></span><button id="copy">Copiar link</button></div>
     <button id="share" class="yes">Mostrar minha tela</button>
     <button id="stop" class="no hidden">Parar de mostrar</button>
-    <label class="audio"><input type="checkbox" id="withAudio"> com som</label>
+    <span id="note" class="note hidden"></span>
     <button id="deaf" class="quiet" aria-pressed="false">Mutar tudo</button>
     <button id="theater" class="quiet" aria-pressed="false" title="Atalho: T. Esc sai.">Modo teatro</button>
   </div>
@@ -194,6 +195,7 @@ function start(code) {
 
   peer.on("open", id => { myId = id; enterRoom(code); joinHub(); render(); });
   addEventListener("pagehide", () => { hub?.peer.destroy(); peer.destroy(); });
+  window.telaoDebug = () => ({ me: myId, hosting: !!hub, claiming, hubOpen: !!hubConn?.open, members: [...conns.keys()], directory: hub && [...hub.conns.keys()] });
   peer.on("disconnected", () => peer.reconnect());
   peer.on("error", e => {
     if (e.type === "peer-unavailable") { if (String(e.message).includes(hubId)) claimHub(); return; }
@@ -228,7 +230,11 @@ function start(code) {
       c.on("close", () => { hub.conns.delete(c.peer); hub.sharers.delete(c.peer); });
     });
   }
+  // Two people opening an empty room at once race for the directory; a connect to it can
+  // also hang silently. Whatever went wrong, keep retrying until we are attached.
+  setInterval(() => { if (myId && !claiming && !hubConn?.open) joinHub(); }, 3000);
   function joinHub() {
+    const old = hubConn; hubConn = null; old?.close();
     const c = peer.connect(hubId, { reliable: true });
     hubConn = c;
     c.on("open", () => { watch(c); if (stream) c.send({ t: "sharing" }); });
@@ -272,23 +278,31 @@ function start(code) {
   async function begin() {
     try { stream = await navigator.mediaDevices.getDisplayMedia({
       video: { frameRate: { ideal: 30 } },
-      audio: $("withAudio").checked && { echoCancellation: false, noiseSuppression: false, autoGainControl: false, suppressLocalAudioPlayback: false },
-      systemAudio: "include",
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, suppressLocalAudioPlayback: false },
+      // System audio would carry the Discord call. Only a browser tab's own audio may go out.
+      systemAudio: "exclude",
+      selfBrowserSurface: "exclude",
     }); }
     catch { hubConn?.send({ t: "stop" }); return; }
     const t = stream.getVideoTracks()[0];
+    const tabAudio = t.getSettings().displaySurface === "browser";
+    if (!tabAudio) stream.getAudioTracks().forEach(a => { a.stop(); stream.removeTrack(a); });
+    note(stream.getAudioTracks().length ? "Mandando a tela com o som desta aba."
+      : tabAudio ? "Sem som: marque “Compartilhar áudio da guia” no seletor."
+      : "Sem som: tela e janela vão mudas para o Discord não vazar. Para ter som, compartilhe uma aba.");
     t.contentHint = "detail"; t.onended = stop;
     $("share").classList.add("hidden"); $("stop").classList.remove("hidden");
     addTile("me", stream);
     conns.forEach((_, id) => callPeer(id));
   }
+  function note(msg) { $("note").textContent = msg; $("note").classList.toggle("hidden", !msg); }
   $("stop").onclick = stop;
   function stop() {
     if (!stream) return;
     stream.getTracks().forEach(t => t.stop()); stream = null;
     calls.forEach(c => c.close()); calls.clear();
     conns.forEach(c => c.send({ t: "stop" }));
-    hubConn?.send({ t: "stop" }); dropTile("me");
+    hubConn?.send({ t: "stop" }); dropTile("me"); note("");
     $("stop").classList.add("hidden"); $("share").classList.remove("hidden");
   }
 
@@ -340,11 +354,13 @@ function watch(c) {
 /* ---------- audio ---------- */
 const tileOf = id => document.querySelector(`.tile[data-id="${id}"]`);
 const hasAudio = id => !!tileOf(id)?.querySelector("video").srcObject?.getAudioTracks().length;
+// Every screen starts muted; the viewer turns on the ones they want to hear.
+const isMuted = id => audio.deaf || audio.muted.get(id) !== false;
 function apply(id) {
   const t = tileOf(id); if (!t) return;
   const v = t.querySelector("video");
   if (id === "me") { v.muted = true; return; }
-  const muted = audio.deaf || audio.muted.get(id) === true;
+  const muted = isMuted(id);
   v.muted = muted; v.volume = audio.vol.get(id) ?? 1;
   const ctl = t.querySelector(".ctl");
   ctl.classList.toggle("muted", muted);
@@ -355,12 +371,12 @@ function apply(id) {
 function applyAll() { document.querySelectorAll(".tile").forEach(t => apply(t.dataset.id)); }
 function toggleMute(id) {
   if (audio.deaf) { audio.deaf = false; $("deaf").setAttribute("aria-pressed", false); $("deaf").textContent = "Mutar tudo"; audio.muted.set(id, false); applyAll(); }
-  else audio.muted.set(id, !audio.muted.get(id));
+  else audio.muted.set(id, !isMuted(id));
   apply(id); render();
 }
 function setVol(id, pct) {
   audio.vol.set(id, pct / 100);
-  if (pct > 0 && audio.muted.get(id)) audio.muted.set(id, false);
+  if (pct > 0) audio.muted.set(id, false);
   apply(id);
   document.querySelectorAll(`[data-vol="${id}"]`).forEach(el => { if (el !== document.activeElement) el.value = pct; });
   document.querySelectorAll(`[data-pct="${id}"]`).forEach(el => el.textContent = pct + "%");
@@ -384,7 +400,7 @@ function member(p) {
   if (live) { badge.className = "live"; badge.textContent = "ao vivo"; }
   el.append(badge);
   if (live && !p.me && hasAudio(p.id)) {
-    const muted = audio.deaf || audio.muted.get(p.id) === true;
+    const muted = isMuted(p.id);
     const vol = document.createElement("div"); vol.className = "vol";
     const btn = document.createElement("button"); btn.className = "ib" + (muted ? " muted" : ""); btn.textContent = muted ? "🔇" : "🔊";
     btn.title = muted ? "Ativar som" : "Mutar"; btn.onclick = () => toggleMute(p.id);
@@ -439,7 +455,10 @@ function addTile(id, stream) {
     ctl.innerHTML = `<button class="ib mute"></button><input type="range" min="0" max="100" data-vol="${id}" aria-label="Volume">`;
     ctl.querySelector(".mute").onclick = () => toggleMute(id);
     ctl.querySelector("input").oninput = e => setVol(id, +e.target.value);
-  } else ctl.classList.add("bare");
+  } else {
+    ctl.classList.add("bare");
+    if (id !== "me") ctl.innerHTML = `<span class="nosound">sem som</span>`;
+  }
   const fs = document.createElement("button"); fs.className = "ib"; fs.textContent = "⛶"; fs.title = "Tela cheia (duplo clique)";
   fs.onclick = () => fullscreen(t);
   ctl.appendChild(fs); t.appendChild(ctl);
