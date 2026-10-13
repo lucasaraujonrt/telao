@@ -168,6 +168,15 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
 .meme kbd{font:700 11px/1 Archivo,sans-serif;background:var(--papel);color:var(--tinta);border-radius:3px;padding:2px 4px;margin-left:6px;vertical-align:1px}
 .meme.picked{box-shadow:inset 0 0 0 2px var(--rosa)}
 .combo{padding:12px 4px 0;display:grid;gap:8px}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:0 4px}
+.mode{display:grid;justify-items:center;gap:2px;padding:10px 4px 8px;border-radius:8px;font:900 18px/1 var(--poster);text-transform:uppercase;color:var(--tinta);position:relative}
+.mode span{font-size:26px;line-height:1.1}
+.mode kbd{font:700 10px/1 Archivo,sans-serif;opacity:.6}
+.mode.pod{background:linear-gradient(160deg,#ff8ad1,#8f6bff)}
+.mode.weed{background:linear-gradient(160deg,#c8f27a,#5aa04a)}
+.mode.tiger{background:linear-gradient(160deg,#ffe066,#ff7a1a)}
+.mode:hover{filter:brightness(1.1)}
+.mode[disabled]{opacity:.5;cursor:default}
 .boardhead{display:flex;align-items:baseline;justify-content:space-between;padding-right:6px}
 .meme .del{margin-left:6px;color:var(--rosa);font-weight:700}
 .meme.off{opacity:.45;text-decoration:line-through}
@@ -184,7 +193,7 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
 #comboFx .burst span{display:inline-block;margin-top:14px;background:var(--tinta);color:var(--giz);font-weight:700;padding:6px 12px;border-radius:6px}
 
 #haze{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:4;opacity:0;transition:opacity 1.5s}
-#room.pod #haze,#room.weed #haze{opacity:1}
+#room.pod #haze,#room.weed #haze,#room.tiger #haze{opacity:1}
 #modeFx{position:fixed;inset:0;pointer-events:none;z-index:5;overflow:hidden;transition:opacity 1.2s}
 #modeFx.out{opacity:0}
 #modeFx img{position:absolute;display:block;user-select:none}
@@ -195,8 +204,20 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
 .snoop{bottom:-2%;height:min(78vh,620px);transform-origin:50% 100%}
 .snoop.mirror{scale:-1 1}
 .sticker{position:absolute;background:#fff;padding:8px 8px 26px;box-shadow:6px 8px 0 #0006;width:clamp(150px,19vw,290px)}
-.sticker img{position:static;width:100%;display:block}
+#modeFx .sticker img{position:static;width:100%;display:block}
 .sticker::before{content:"";position:absolute;top:-12px;left:50%;width:70px;height:24px;translate:-50% 0;rotate:-4deg;background:#ffe600cc}
+.tigre{position:absolute;left:50%;top:50%;translate:-50% -50%;display:grid;justify-items:center;gap:0;--cell:clamp(56px,7vw,88px)}
+#modeFx .tigre img{position:static;width:clamp(150px,18vw,240px);border-radius:16px;border:5px solid #ffd23f;box-shadow:0 0 50px #ffb300;margin-bottom:-18px;z-index:1}
+.machine{background:linear-gradient(#c8102e,#7a0010);border:5px solid #ffd23f;border-radius:18px;padding:22px 16px 12px;box-shadow:0 12px 0 #4a0008,0 0 60px #ff3b1f99;display:grid;justify-items:center;gap:10px}
+.reels{display:flex;gap:10px}
+.reel{width:var(--cell);height:var(--cell);overflow:hidden;background:#fff8e1;border-radius:10px;box-shadow:inset 0 6px 10px #0005}
+.strip span{display:grid;place-items:center;height:var(--cell);font-size:calc(var(--cell) * .66)}
+.saldo{font-weight:700;color:#ffe9a6;font-size:14px}
+.result{font:900 clamp(34px,5vw,64px)/.9 var(--poster);text-transform:uppercase;padding:4px 14px;border-radius:8px}
+.result.win{color:#7a0010;background:#ffd23f;box-shadow:0 0 40px #ffd23f}
+.result.lose{color:#fff;background:#111;rotate:-3deg}
+.coin{position:absolute;top:0;font-size:clamp(26px,3vw,42px)}
+#room.tiger #grid{filter:saturate(1.35) sepia(.2)}
 #room.pod #grid{animation:podhue 2.6s linear infinite,beat .47s ease-in-out infinite}
 #room.weed #grid{animation:baked 7s ease-in-out infinite;filter:url(#wobble) saturate(1.5) contrast(.92)}
 @keyframes podhue{from{filter:hue-rotate(0) saturate(1.6)}to{filter:hue-rotate(360deg) saturate(1.6)}}
@@ -259,15 +280,22 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
       <button class="ib rx" data-r="2" title="Reação (3)">🔥</button>
       <button class="ib rx" data-r="3" title="Reação (4)">🤡</button>
       <button class="ib rx" data-r="4" title="Reação (5)">😭</button>
-      <span class="sep"></span>
-      <button class="ib mode" data-mode="pod" title="Modo pod (P): a sala vira uma nuvem de vape">💨</button>
-      <button class="ib mode" data-mode="weed" title="Modo 4:20 (M): a sala enche de fumaça">🌿</button>
+
     </div>
     <button id="theater" class="quiet" aria-pressed="false" title="Atalho: T. Esc sai.">Modo teatro</button>
   </div>
   <div id="grid"><p id="empty"><strong>Telão apagado</strong><span>Ninguém está mostrando a tela. Clique em “Mostrar minha tela” para começar.</span></p></div>
   <aside id="side">
     <h2>Na sala</h2><div id="count"></div><div id="members"></div>
+    <section class="board">
+      <h2>Modos</h2>
+      <p class="hint">15 segundos para a sala toda.</p>
+      <div class="modes">
+        <button class="mode pod" data-mode="pod"><span>💨</span>Pod<kbd>P</kbd></button>
+        <button class="mode weed" data-mode="weed"><span>🌿</span>4:20<kbd>M</kbd></button>
+        <button class="mode tiger" data-mode="tiger"><span>🐯</span>Tigrinho<kbd>G</kbd></button>
+      </div>
+    </section>
     <section class="board">
       <div class="boardhead"><h2>Memes</h2><button class="rename" id="editMemes">editar</button></div>
       <p class="hint">Toca para a sala toda. Shift+clique junta memes num combo. Mouse em cima de um meme + Q, W, E ou R fixa a tecla.</p>
@@ -412,7 +440,7 @@ function start(code) {
       else if (m.t === "combo") playCombo(m.ks, c.peer);
       else if (m.t === "react") showReact(fromWire(m.target), m.e, c.peer);
       else if (m.t === "throw") landThrow(fromWire(m.target), m.item, m.x, m.y, c.peer);
-      else if (m.t === "mode") startMode(m.mode, m.track, c.peer);
+      else if (m.t === "mode") startMode(m.mode, m.track, c.peer, m.reels);
     });
     c.on("close", () => { conns.delete(c.peer); calls.delete(c.peer); names.delete(c.peer); dropTile(c.peer); });
   }
@@ -485,7 +513,7 @@ function start(code) {
 }
 
 function enterRoom(code) {
-  ["pod.webp", "snoop.webp", "smoke-snoop.gif", "smoke-elon.gif", "smoke-wiz.gif"].forEach(f => { new Image().src = "img/" + f; });
+  ["pod.webp", "snoop.webp", "smoke-snoop.gif", "smoke-elon.gif", "smoke-wiz.gif", "tigrinho.webp"].forEach(f => { new Image().src = "img/" + f; });
   const url = `${location.origin}${location.pathname}#${code}`;
   history.replaceState(null, "", "#" + code);
   $("home").classList.add("hidden"); $("room").classList.remove("hidden");
@@ -594,6 +622,7 @@ const MEMES = [
   ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-e-lutador", "AAAA é lutador"], ["hello-moto-estourado", "Hello Moto"], ["som-do-zap-zap-estourado", "Zap zap"],
   ["a-risada-do-kiko", "Risada do Kiko"], ["bom-dia-magnata", "Bom dia, magnata"], ["abriu-o-audio", "Abriu o áudio"],
   ["briga-de-gato", "Briga de gato"], ["dexter-meme", "Dexter"], ["psycho-scream-soundbible", "Grito"],
+  ["tigrinho-informa", "Tigrinho informa"], ["tigrinho-vai-te-pegar", "Tigrinho vai te pegar"],
 ];
 // Built-in sounds are served from /sounds, loudness-normalized with ffmpeg so the
 // "estourado" ones are no louder than the rest. Custom ones ("x:<slug>") come from myinstants.
@@ -879,6 +908,20 @@ function sfx(kind) {
     o.connect(g).connect(out); o.start(t0 + at); o.stop(t0 + at + dur);
   };
   if (kind === "whoosh") noise(.35, "bandpass", 600, .25);
+  else if (kind === "coins") {
+    for (let i = 0; i < 14; i++) { const at = i * .07, f = 1800 + Math.random() * 1600; thump(f, f * .98, .12, .25, at); thump(f * 1.5, f * 1.48, .09, .12, at + .01); }
+  }
+  else if (kind === "trombone") {
+    [[392, 0], [370, .45], [349, .9], [330, 1.35]].forEach(([f, at], i) => {
+      const o = ac.createOscillator(), g = ac.createGain(), lp = ac.createBiquadFilter();
+      o.type = "sawtooth"; lp.type = "lowpass"; lp.frequency.value = 1200;
+      o.frequency.setValueAtTime(f, t0 + at);
+      if (i === 3) { o.frequency.linearRampToValueAtTime(f * .9, t0 + at + 1.1); const l = ac.createOscillator(), lg = ac.createGain(); l.frequency.value = 6; lg.gain.value = 8; l.connect(lg).connect(o.frequency); l.start(t0 + at); l.stop(t0 + at + 1.2); }
+      const len = i === 3 ? 1.2 : .4;
+      g.gain.setValueAtTime(0, t0 + at); g.gain.linearRampToValueAtTime(.35, t0 + at + .04); g.gain.setValueAtTime(.35, t0 + at + len - .08); g.gain.linearRampToValueAtTime(0, t0 + at + len);
+      o.connect(lp).connect(g).connect(out); o.start(t0 + at); o.stop(t0 + at + len);
+    });
+  }
   else if (kind === "tick") { out.gain.value = .9; noise(.02, "highpass", 3000, 1.2); thump(1800, 1200, .03, .35); }
   else if (kind === "tickhi") { out.gain.value = 1; noise(.02, "highpass", 3500, 1.4); thump(2600, 1800, .04, .5); }
   else if (kind === "tomate") { noise(.4, "lowpass", 900, 1.3); thump(170, 45, .28, .9); }
@@ -987,7 +1030,9 @@ function bomb(id) {
 const MODES = {
   pod: { title: "Modo pod", tracks: ["ymca", "barbie-girl-in-a-barbie-world", "gloria-gaynor-i-will-survive-mp3cut"] },
   weed: { title: "Modo 4:20", tracks: ["smoke_weed_everyday_song"], intro: "snoop-dogg-smoke-weed-everyday" },
+  tiger: { title: "Modo tigrinho", tracks: ["solta-a-carta-tigrinho"] },
 };
+const SLOTS = ["🐯", "🧧", "💰", "🍊", "🔔"];
 const MODE_MS = 15000;
 let mode = null, modeEnd = 0, modeAudio = [], lastMode = new Map();
 document.querySelectorAll(".mode").forEach(b => b.onclick = () => fireMode(b.dataset.mode));
@@ -995,15 +1040,19 @@ document.querySelectorAll(".mode").forEach(b => b.onclick = () => fireMode(b.dat
 function fireMode(name) {
   if (mode) return toast(`${MODES[mode].title} ainda está rolando.`);
   const tracks = MODES[name].tracks, track = tracks[Math.floor(Math.random() * tracks.length)];
-  broadcast({ t: "mode", mode: name, track });
-  startMode(name, track, "me");
+  // The sender rolls the slot so everyone sees the same result. Mostly you lose, like the real thing.
+  const reels = Math.random() < .2 ? [0, 0, 0] : (() => { let r; do r = [0, 1, 2].map(() => Math.floor(Math.random() * SLOTS.length)); while (r[0] === r[1] && r[1] === r[2]); return r; })();
+  const msg = { t: "mode", mode: name, track, reels };
+  broadcast(msg);
+  startMode(name, track, "me", reels);
 }
-function startMode(name, track, from) {
+function startMode(name, track, from, reels) {
   const m = MODES[name]; if (!m || !m.tracks.includes(track) || mode) return;
   const now = Date.now();
   if (from !== "me" && now - (lastMode.get(from) || 0) < 15000) return;
   lastMode.set(from, now);
   mode = name; modeEnd = now + MODE_MS;
+  document.querySelectorAll(".mode").forEach(b => b.disabled = true);
   $("room").classList.add(name);
   const fx = $("comboFx");
   fx.innerHTML = `<div class="burst"><b></b><span></span></div>`;
@@ -1018,8 +1067,8 @@ function startMode(name, track, from) {
     }, at);
     if (m.intro) { play(m.intro, 0); play(track, 2600); } else play(track, 0);
   }
-  haze.start(name === "pod" ? 0 : 1);
-  props(name);
+  haze.start({ pod: 0, weed: 1, tiger: 2 }[name]);
+  props(name, reels);
   setTimeout(stopMode, MODE_MS);
 }
 function stopMode() {
@@ -1027,6 +1076,7 @@ function stopMode() {
   $("room").classList.remove(mode);
   modeAudio.forEach(a => { const fade = setInterval(() => { a.volume = Math.max(0, a.volume - .08); if (!a.volume) { a.pause(); clearInterval(fade); } }, 80); });
   modeAudio = []; mode = null;
+  document.querySelectorAll(".mode").forEach(b => b.disabled = false);
   $("modeFx").classList.add("out");
   setTimeout(() => { if (!mode) $("modeFx").replaceChildren(); }, 1300);
   setTimeout(() => { if (!mode) haze.stop(); }, 1600);
@@ -1034,7 +1084,7 @@ function stopMode() {
 
 // Pod mode: a giant pod hits to the beat while more pods fly across the room.
 // 4:20 mode: Snoop Dogg dances in from the sides.
-function props(name) {
+function props(name, reels) {
   const box = $("modeFx"); box.replaceChildren(); box.classList.remove("out");
   const img = (src, cls) => { const i = new Image(); i.src = src; i.className = cls; i.alt = ""; box.append(i); return i; };
   if (name === "pod") {
@@ -1051,6 +1101,8 @@ function props(name) {
       setTimeout(fly, 450 + Math.random() * 700);
     };
     fly();
+  } else if (name === "tiger") {
+    slot(box, Array.isArray(reels) && reels.length === 3 && reels.every(r => Number.isInteger(r) && r >= 0 && r < SLOTS.length) ? reels : [1, 2, 3]);
   } else {
     [[.5, "", 0], [.12, " mirror", 450], [.88, " mirror", 900]].forEach(([x, cls, delay], i) => {
       const s = img("img/snoop.webp", "snoop" + cls);
@@ -1069,6 +1121,42 @@ function props(name) {
     }, at));
     wobble();
   }
+}
+
+function slot(box, reels) {
+  const wrap = document.createElement("div"); wrap.className = "tigre";
+  wrap.innerHTML = `<img src="img/tigrinho.webp" alt=""><div class="machine"><div class="reels"></div><div class="saldo">Saldo: R$ 0,00</div></div>`;
+  box.append(wrap);
+  wrap.animate([{ transform: "translateY(-120%) rotate(-10deg)" }, { transform: "translateY(0) rotate(0)" }], { duration: 700, easing: "cubic-bezier(.2,1.5,.4,1)" });
+  const win = reels.every(r => r === 0);
+  reels.forEach((final, i) => {
+    const reel = document.createElement("div"); reel.className = "reel";
+    const strip = document.createElement("div"); strip.className = "strip";
+    const n = 18 + i * 6;
+    for (let j = 0; j < n; j++) strip.append(Object.assign(document.createElement("span"), { textContent: SLOTS[j === n - 1 ? final : Math.floor(Math.random() * SLOTS.length)] }));
+    reel.append(strip); wrap.querySelector(".reels").append(reel);
+    const stopAt = 2400 + i * 900;
+    strip.animate([{ transform: "translateY(0)" }, { transform: `translateY(calc(-${n - 1} * var(--cell)))` }], { duration: stopAt, easing: "cubic-bezier(.12,.55,.2,1)", fill: "forwards" });
+    setTimeout(() => { if (mode === "tiger") sfx("tick"); }, stopAt);
+  });
+  setTimeout(() => {
+    if (mode !== "tiger") return;
+    const res = document.createElement("div"); res.className = "result " + (win ? "win" : "lose");
+    res.textContent = win ? "Soltou a carta!" : "Perdeu tudo";
+    wrap.querySelector(".machine").append(res);
+    res.animate([{ transform: "scale(.3) rotate(-8deg)", opacity: 0 }, { transform: "scale(1.15) rotate(3deg)", opacity: 1, offset: .6 }, { transform: "scale(1)" }], { duration: 500 });
+    wrap.querySelector(".saldo").textContent = win ? "Saldo: R$ 999.999,99 (de mentira)" : "Saldo: R$ 0,00. Era só um meme.";
+    if (win) { sfx("coins"); rain(box); } else sfx("trombone");
+  }, 2400 + 2 * 900 + 300);
+}
+function rain(box) {
+  for (let i = 0; i < 60; i++) setTimeout(() => {
+    if (mode !== "tiger") return;
+    const c = document.createElement("span"); c.className = "coin"; c.textContent = Math.random() < .2 ? "🧧" : "🪙";
+    c.style.left = Math.random() * 100 + "%";
+    box.append(c);
+    c.animate([{ transform: "translateY(-10vh) rotate(0)" }, { transform: `translateY(110vh) rotate(${Math.random() * 720 - 360}deg)` }], { duration: 1600 + Math.random() * 1400, easing: "cubic-bezier(.4,0,.8,1)" }).onfinish = () => c.remove();
+  }, i * 70);
 }
 
 // Animates the SVG turbulence that warps the room during 4:20.
@@ -1103,7 +1191,19 @@ float smoke(vec2 p,float t){
 }
 void main(){
   vec2 uv=gl_FragCoord.xy/res;float asp=res.x/res.y;vec2 p=vec2(uv.x*asp,uv.y);
-  if(kind>.5){
+  if(kind>1.5){
+    vec2 c=vec2(.5*asp,.5),d=p-c;
+    float ang=atan(d.y,d.x),r=length(d);
+    float rays=smoothstep(.2,.9,sin(ang*14.+t*1.4))*smoothstep(1.2,.1,r);
+    float glow=exp(-r*r*3.);
+    vec3 col=mix(vec3(.55,.02,.05),vec3(1.,.78,.15),rays*.85+glow*.5);
+    vec2 cell=gl_FragCoord.xy/26.,id=floor(cell),fp=fract(cell)-.5;
+    float rnd=h(id),tw=.5+.5*sin(t*7.+rnd*50.);
+    float sp=step(.88,rnd)*smoothstep(.22,0.,length(fp))*tw;
+    col+=vec3(1.,.9,.5)*sp;
+    float vig=smoothstep(.3,1.,r*1.1);
+    gl_FragColor=vec4(col,clamp(.28+rays*.32+vig*.35+sp,0.,.85)*amt);
+  }else if(kind>.5){
     vec2 sp=p*2.+vec2(0.,-t*.16);
     float d=smoke(sp,t),d2=smoke(p*1.1+vec2(3.,-t*.07),t*.6);
     float e=.02,dx=smoke(sp+vec2(e,0.),t)-d,dy=smoke(sp+vec2(0.,e),t)-d;
@@ -1197,6 +1297,7 @@ addEventListener("keydown", e => {
   else if (k === "v") randomCombo();
   else if (k === "p") fireMode("pod");
   else if (k === "m") fireMode("weed");
+  else if (k === "g") fireMode("tiger");
   else if (k === "t") theater(!view.theater);
 });
 
