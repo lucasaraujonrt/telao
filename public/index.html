@@ -194,10 +194,11 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
 @keyframes hit{0%,100%{transform:rotate(-12deg) scale(1)}50%{transform:rotate(10deg) scale(1.12)}}
 .snoop{bottom:-2%;height:min(78vh,620px);transform-origin:50% 100%}
 .snoop.mirror{scale:-1 1}
-@media (prefers-reduced-motion:no-preference){.snoop{animation:snoop .9s ease-in-out infinite}}
-@keyframes snoop{0%,100%{rotate:-7deg;translate:0 0}25%{translate:0 -3%}50%{rotate:7deg;translate:0 0}75%{translate:0 -3%}}
+.sticker{position:absolute;background:#fff;padding:8px 8px 26px;box-shadow:6px 8px 0 #0006;width:clamp(150px,19vw,290px)}
+.sticker img{position:static;width:100%;display:block}
+.sticker::before{content:"";position:absolute;top:-12px;left:50%;width:70px;height:24px;translate:-50% 0;rotate:-4deg;background:#ffe600cc}
 #room.pod #grid{animation:podhue 2.6s linear infinite,beat .47s ease-in-out infinite}
-#room.weed #grid{animation:baked 7s ease-in-out infinite;filter:saturate(1.5) contrast(.92) blur(.6px)}
+#room.weed #grid{animation:baked 7s ease-in-out infinite;filter:url(#wobble) saturate(1.5) contrast(.92)}
 @keyframes podhue{from{filter:hue-rotate(0) saturate(1.6)}to{filter:hue-rotate(360deg) saturate(1.6)}}
 @keyframes beat{50%{scale:1.012}}
 @keyframes baked{0%,100%{rotate:0deg;scale:1;translate:0 0}25%{rotate:-.8deg;scale:1.02;translate:-6px 4px}50%{rotate:.6deg;scale:1.035;translate:5px -3px}75%{rotate:-.4deg;scale:1.015;translate:-3px -5px}}
@@ -273,6 +274,9 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
   <div id="comboFx" aria-hidden="true"></div>
   <canvas id="haze" aria-hidden="true"></canvas>
   <div id="modeFx" aria-hidden="true"></div>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="wobble"><feTurbulence id="turb" type="fractalNoise" baseFrequency="0.006 0.009" numOctaves="2" seed="4"/><feDisplacementMap in="SourceGraphic" scale="16" xChannelSelector="R" yChannelSelector="G"/></filter>
+  </svg>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -460,6 +464,7 @@ function start(code) {
 }
 
 function enterRoom(code) {
+  ["pod.webp", "snoop.webp", "smoke-snoop.gif", "smoke-elon.gif", "smoke-wiz.gif"].forEach(f => { new Image().src = "img/" + f; });
   const url = `${location.origin}${location.pathname}#${code}`;
   history.replaceState(null, "", "#" + code);
   $("home").classList.add("hidden"); $("room").classList.remove("hidden");
@@ -924,11 +929,33 @@ function props(name) {
     [[.5, "", 0], [.12, " mirror", 450], [.88, " mirror", 900]].forEach(([x, cls, delay], i) => {
       const s = img("img/snoop.webp", "snoop" + cls);
       const h = i ? "min(55vh,440px)" : "min(78vh,620px)";
-      s.style.height = h; s.style.left = x * 100 + "%"; s.style.marginLeft = `calc(${h} * -.193)`;
-      s.style.animationDelay = `-${i * .45}s`;
+      s.style.height = h; s.style.left = x * 100 + "%"; s.style.marginLeft = `calc(${h} * -.2215)`;
       s.animate([{ transform: `translateY(110%)` }, { transform: "translateY(0)" }], { duration: 900, delay, easing: "cubic-bezier(.2,1.4,.4,1)", fill: "backwards" });
     });
+    // the smoking gifs get slapped on like stickers, one at a time
+    [["smoke-snoop.gif", "3%", "4%", -7, 1800], ["smoke-elon.gif", "38%", "2%", 4, 4600], ["smoke-wiz.gif", "73%", "6%", -3, 7400]].forEach(([src, left, top, rot, at]) => setTimeout(() => {
+      if (mode !== "weed") return;
+      const card = document.createElement("div"); card.className = "sticker";
+      Object.assign(card.style, { left, top, rotate: rot + "deg" });
+      const g = new Image(); g.src = "img/" + src; g.alt = ""; card.append(g); box.append(card);
+      card.animate([{ transform: "scale(2.2) rotate(18deg)", opacity: 0 }, { transform: "scale(.94)", opacity: 1, offset: .7 }, { transform: "scale(1)" }], { duration: 380, easing: "ease-in" });
+      sfx("chinelo");
+    }, at));
+    wobble();
   }
+}
+
+// Animates the SVG turbulence that warps the room during 4:20.
+function wobble() {
+  const turb = document.getElementById("turb"), t0 = performance.now();
+  const step = () => {
+    if (mode !== "weed") return;
+    const t = (performance.now() - t0) / 1000;
+    turb.setAttribute("baseFrequency", `${(.006 + .002 * Math.sin(t * .7)).toFixed(4)} ${(.009 + .003 * Math.cos(t * .5)).toFixed(4)}`);
+    turb.setAttribute("seed", Math.floor(t * 4) % 50);
+    setTimeout(step, 120);
+  };
+  step();
 }
 
 // One fragment shader, two looks: neon vapor swirls (pod) or thick rising smoke (weed).
@@ -936,35 +963,55 @@ const haze = (() => {
   const cv = $("haze"), gl = cv.getContext("webgl", { premultipliedAlpha: false, alpha: true });
   if (!gl) return { start() {}, stop() {} };
   const vs = "attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}";
-  const fs = `precision mediump float;
+  const fs = `precision highp float;
 uniform vec2 res;uniform float t,kind,amt;
 float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
   return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
-float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<6;i++){v+=a*n(p);p=p*2.03+vec2(1.7,9.2);a*=.5;}return v;}
+float fbm(vec2 p){float v=0.,a=.5;mat2 m=mat2(1.6,1.2,-1.2,1.6);for(int i=0;i<5;i++){v+=a*n(p);p=m*p;a*=.5;}return v;}
+// Two rounds of domain warping give smoke its curling, billowing shape.
+float smoke(vec2 p,float t){
+  vec2 q=vec2(fbm(p+vec2(0.,-t*.25)),fbm(p+vec2(5.2,1.3)-vec2(0.,t*.2)));
+  vec2 r=vec2(fbm(p+3.*q+vec2(1.7,9.2)+.15*t),fbm(p+3.*q+vec2(8.3,2.8)-.12*t));
+  return fbm(p+2.5*r);
+}
 void main(){
-  vec2 uv=gl_FragCoord.xy/res;vec2 q=uv*vec2(res.x/res.y,1.)*2.2;
-  if(kind<.5){
-    vec2 w=vec2(fbm(q+vec2(t*.15,-t*.1)),fbm(q+vec2(-t*.12,t*.08)+3.1));
-    float c=fbm(q+2.4*w+vec2(sin(t*.3),cos(t*.25)));
-    float hue=c*1.2+t*.12;
-    vec3 col=mix(vec3(1.,.22,.72),vec3(.35,.88,1.),.5+.5*sin(6.2831*hue));
-    col=mix(col,vec3(.72,.4,1.),.5+.5*sin(6.2831*hue+2.1)*.6);
-    col+=.35*smoothstep(.6,.85,c);
-    float a=smoothstep(.28,.72,c)*.88;
-    vec2 cell=gl_FragCoord.xy/22.,id=floor(cell),fp=fract(cell)-.5;
-    float rnd=h(id),tw=.5+.5*sin(t*6.+rnd*40.);
-    vec2 o=vec2(h(id+3.1),h(id+7.7))-.5;
-    float sp=step(.9,rnd)*smoothstep(.2,0.,length(fp-o*.6))*tw;
-    gl_FragColor=vec4(min(col+sp,1.),clamp(a+sp,0.,1.)*amt);
+  vec2 uv=gl_FragCoord.xy/res;float asp=res.x/res.y;vec2 p=vec2(uv.x*asp,uv.y);
+  if(kind>.5){
+    vec2 sp=p*2.+vec2(0.,-t*.16);
+    float d=smoke(sp,t),d2=smoke(p*1.1+vec2(3.,-t*.07),t*.6);
+    float e=.02,dx=smoke(sp+vec2(e,0.),t)-d,dy=smoke(sp+vec2(0.,e),t)-d;
+    float rise=smoothstep(1.1,0.,uv.y);
+    float dens=smoothstep(.32,.8,d*.65+d2*.45)*(.4+.8*rise);
+    float light=clamp(.75+10.*(dy*1.2-dx*.4),.35,1.35);
+    vec3 col=mix(vec3(.45,.52,.42),vec3(.9,.93,.86),d2)*light;
+    col+=vec3(.12,.28,.05)*rise*.7;
+    float vig=smoothstep(.35,1.,length((uv-.5)*vec2(asp,1.))*.9);
+    col=mix(col,vec3(.06,.1,.04),vig*.6);
+    gl_FragColor=vec4(col,clamp(dens*.93+vig*.4,0.,.96)*amt);
   }else{
-    vec2 r=q+vec2(0.,-t*.22);
-    vec2 w=vec2(fbm(r+vec2(t*.05,0.)),fbm(r+5.2));
-    float c=fbm(r+1.8*w);
-    float dens=smoothstep(.3,.8,c)*(1.25-uv.y*.55);
-    vec3 col=mix(vec3(.62,.7,.6),vec3(.93,.95,.9),c);
-    float vig=smoothstep(.2,.95,length(uv-.5)*1.3);
-    gl_FragColor=vec4(mix(col,vec3(.25,.35,.2),vig*.5),clamp(dens*.9+vig*.25,0.,.95)*amt);
+    vec2 c=vec2(.5*asp,.48);
+    float ph=fract(t/2.8),r=length(p-c);
+    float puff=exp(-pow((r-ph*.9)/(.08+.3*ph),2.))*(1.-ph)*1.3;
+    float d=smoke(p*1.7+vec2(t*.04,-t*.1),t*.8);
+    float dens=smoothstep(.3,.78,d+puff*.45);
+    vec3 col=vec3(0.);
+    for(int i=0;i<3;i++){
+      float fi=float(i);
+      vec2 lp=c+vec2(cos(t*.7+fi*2.1)*.55*asp,sin(t*.9+fi*1.7)*.35);
+      vec3 lc=fi<.5?vec3(1.,.15,.6):fi<1.5?vec3(.2,.8,1.):vec3(.65,.25,1.);
+      col+=lc*dens*1.1/(1.+5.*dot(p-lp,p-lp));
+    }
+    col+=vec3(1.,.95,1.)*pow(dens,2.5)*.55;
+    float las=0.;
+    for(int i=0;i<4;i++){
+      float fi=float(i),ang=sin(t*.8+fi*1.6)*.75;
+      vec2 o=vec2(c.x+(fi-1.5)*.18*asp,1.05),dir=vec2(sin(ang),-cos(ang));
+      vec2 w=p-o;float dist=length(w-dir*dot(w,dir));
+      las+=exp(-dist*dist*9000.)*(.25+dens*1.6);
+    }
+    col+=mix(vec3(.3,1.,.6),vec3(1.,.3,.8),.5+.5*sin(t*1.3))*las;
+    gl_FragColor=vec4(min(col,1.2),clamp(dens*.8+las*.7,0.,.95)*amt);
   }
 }`;
   const sh = (type, src) => { const o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o); return o; };
@@ -978,7 +1025,7 @@ void main(){
   gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   let raf = 0, t0 = 0, kind = 0;
   const frame = now => {
-    const scale = .5;                       // half resolution: smoke is blurry anyway, and it keeps the GPU cool
+    const scale = .6;                       // under full resolution: smoke is soft anyway, and it keeps the GPU cool
     const w = Math.round(innerWidth * scale), h = Math.round(innerHeight * scale);
     if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
     gl.viewport(0, 0, w, h); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
