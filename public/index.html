@@ -168,6 +168,13 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
 .meme kbd{font:700 11px/1 Archivo,sans-serif;background:var(--papel);color:var(--tinta);border-radius:3px;padding:2px 4px;margin-left:6px;vertical-align:1px}
 .meme.picked{box-shadow:inset 0 0 0 2px var(--rosa)}
 .combo{padding:12px 4px 0;display:grid;gap:8px}
+.boardhead{display:flex;align-items:baseline;justify-content:space-between;padding-right:6px}
+.meme .del{margin-left:6px;color:var(--rosa);font-weight:700}
+.meme.off{opacity:.45;text-decoration:line-through}
+#addMeme{display:grid;gap:8px;padding:12px 4px 0}
+#addMeme input{font:inherit;font-size:14px;color:var(--giz);background:var(--noite2);border:0;border-radius:6px;padding:9px 10px;outline:none;min-width:0}
+#addMeme input:focus{box-shadow:inset 0 0 0 2px var(--rosa)}
+#addMeme .hint{padding:0}
 .combo .yes{width:100%;font-family:var(--poster);font-weight:900;font-size:20px;text-transform:uppercase;letter-spacing:.02em;box-shadow:4px 4px 0 var(--rosa)}
 #tray{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:var(--noite2);border-radius:6px;padding:8px}
 #trayList{flex:1 1 100%;font-size:13px;color:var(--giz)}
@@ -178,6 +185,17 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
 
 #haze{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:4;opacity:0;transition:opacity 1.5s}
 #room.pod #haze,#room.weed #haze{opacity:1}
+#modeFx{position:fixed;inset:0;pointer-events:none;z-index:5;overflow:hidden;transition:opacity 1.2s}
+#modeFx.out{opacity:0}
+#modeFx img{position:absolute;display:block;user-select:none}
+.pod-fly{width:clamp(90px,12vw,170px);filter:drop-shadow(0 0 18px #ff3fa4aa)}
+.pod-boss{left:50%;top:50%;width:clamp(180px,26vw,360px);translate:-50% -50%;filter:drop-shadow(0 0 40px #ff8a3d)}
+@media (prefers-reduced-motion:no-preference){.pod-boss{animation:hit .94s ease-in-out infinite}}
+@keyframes hit{0%,100%{transform:rotate(-12deg) scale(1)}50%{transform:rotate(10deg) scale(1.12)}}
+.snoop{bottom:-2%;height:min(78vh,620px);transform-origin:50% 100%}
+.snoop.mirror{scale:-1 1}
+@media (prefers-reduced-motion:no-preference){.snoop{animation:snoop .9s ease-in-out infinite}}
+@keyframes snoop{0%,100%{rotate:-7deg;translate:0 0}25%{translate:0 -3%}50%{rotate:7deg;translate:0 0}75%{translate:0 -3%}}
 #room.pod #grid{animation:podhue 2.6s linear infinite,beat .47s ease-in-out infinite}
 #room.weed #grid{animation:baked 7s ease-in-out infinite;filter:saturate(1.5) contrast(.92) blur(.6px)}
 @keyframes podhue{from{filter:hue-rotate(0) saturate(1.6)}to{filter:hue-rotate(360deg) saturate(1.6)}}
@@ -234,19 +252,27 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
   <aside id="side">
     <h2>Na sala</h2><div id="count"></div><div id="members"></div>
     <section class="board">
-      <h2>Memes</h2>
+      <div class="boardhead"><h2>Memes</h2><button class="rename" id="editMemes">editar</button></div>
       <p class="hint">Toca para a sala toda. Shift+clique junta memes num combo. Mouse em cima de um meme + Q, W, E ou R fixa a tecla.</p>
       <div id="memes"></div>
       <div class="combo">
         <button id="comboRandom" class="yes" title="Atalho: V">Combo aleatório</button>
         <div id="tray" class="hidden"><span id="trayList"></span><button id="trayFire" class="no">Soltar combo</button><button class="ib" id="trayClear" title="Limpar combo">✕</button></div>
       </div>
-      <div class="memevol"><button class="ib" id="hush" title="Parar os memes tocando agora">■</button><input type="range" id="memeVol" min="0" max="100" value="70" aria-label="Volume dos memes"><span id="memePct">70%</span></div>
+      <div class="memevol"><button class="ib" id="hush" title="Parar os memes tocando agora">■</button><input type="range" id="memeVol" min="0" max="100" value="40" aria-label="Volume dos memes"><span id="memePct">40%</span></div>
+      <form id="addMeme" class="hidden">
+        <p class="hint">Clique num meme para esconder. Para adicionar, no myinstants clique com o botão direito em “Download MP3”, copie o link e cole aqui.</p>
+        <input type="text" id="newLabel" placeholder="Nome do meme" maxlength="30" aria-label="Nome do meme">
+        <input type="text" id="newUrl" placeholder="https://www.myinstants.com/media/sounds/….mp3" aria-label="Link do MP3">
+        <button class="yes">Adicionar meme</button>
+        <button type="button" class="rename" id="resetMemes">voltar para os memes padrão</button>
+      </form>
     </section>
   </aside>
   <div id="toasts" aria-live="polite"></div>
   <div id="comboFx" aria-hidden="true"></div>
   <canvas id="haze" aria-hidden="true"></canvas>
+  <div id="modeFx" aria-hidden="true"></div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -358,7 +384,7 @@ function start(code) {
     c.on("data", m => {
       if (m.t === "hello") { names.set(c.peer, String(m.name).slice(0, 24)); render(); }
       else if (m.t === "stop") dropTile(c.peer);
-      else if (m.t === "meme") playMeme(m.k, c.peer);
+      else if (m.t === "meme") playMeme(m.k, c.peer, m.label);
       else if (m.t === "combo") playCombo(m.ks, c.peer);
       else if (m.t === "react") showReact(fromWire(m.target), m.e, c.peer);
       else if (m.t === "throw") landThrow(fromWire(m.target), m.item, m.x, m.y, c.peer);
@@ -537,31 +563,76 @@ const MEMES = [
   ["a-risada-do-kiko", "Risada do Kiko"], ["bom-dia-magnata", "Bom dia, magnata"], ["abriu-o-audio", "Abriu o áudio"],
   ["briga-de-gato", "Briga de gato"], ["dexter-meme", "Dexter"], ["psycho-scream-soundbible", "Grito"],
 ];
-const memeUrl = k => `https://www.myinstants.com/media/sounds/${k}.mp3`;
+// Built-in sounds are served from /sounds, loudness-normalized with ffmpeg so the
+// "estourado" ones are no louder than the rest. Custom ones ("x:<slug>") come from myinstants.
+const memeUrl = k => k.startsWith("x:") ? `https://www.myinstants.com/media/sounds/${k.slice(2)}.mp3` : `sounds/${k}.mp3`;
+const validKey = k => typeof k === "string" && (MEMES.some(m => m[0] === k) || /^x:[\w.-]{1,80}$/.test(k));
+const cleanLabel = l => String(l || "").replace(/\s+/g, " ").trim().slice(0, 30);
 const memeLabel = new Map(MEMES);
 const playing = new Set(), lastFrom = new Map();
-let memeVol = 0.7, cooldown = false;
+let memeVol = +(store.get("telao-memevol") ?? 40) / 100, cooldown = false, editing = false;
+let custom = [], hidden = new Set();
+try { custom = (JSON.parse(store.get("telao-custom")) || []).filter(([k]) => validKey(k)); } catch {}
+try { hidden = new Set(JSON.parse(store.get("telao-hidden")) || []); } catch {}
+custom.forEach(([k, l]) => memeLabel.set(k, l));
+$("memeVol").value = Math.round(memeVol * 100); $("memePct").textContent = $("memeVol").value + "%";
 
 const KEYS = ["q", "w", "e", "r"];
 let bound = { q: "faaah", w: "a-risada-do-kiko", e: "rojao-super-estourado", r: "psycho-scream-soundbible" };
 try { Object.assign(bound, JSON.parse(store.get("telao-keys")) || {}); } catch {}
 let hoverMeme = null;
 
-for (const [k, label] of MEMES) {
-  const b = document.createElement("button"); b.className = "meme"; b.dataset.k = k;
-  b.append(label);
-  b.onclick = e => e.shiftKey ? pick(k) : fireMeme(k);
-  b.onmouseenter = () => hoverMeme = k;
-  b.onmouseleave = () => hoverMeme = null;
-  $("memes").appendChild(b);
+function board() {
+  const box = $("memes"); box.replaceChildren();
+  for (const [k, label] of [...MEMES, ...custom]) {
+    if (hidden.has(k) && !editing) continue;
+    const b = document.createElement("button"); b.className = "meme" + (hidden.has(k) ? " off" : ""); b.dataset.k = k;
+    b.append(label);
+    if (editing) {
+      const x = document.createElement("span"); x.className = "del"; x.textContent = hidden.has(k) ? "↺" : "✕"; b.append(x);
+      b.title = hidden.has(k) ? "Mostrar de novo" : k.startsWith("x:") ? "Apagar" : "Esconder";
+      b.onclick = () => removeMeme(k);
+    } else {
+      b.onclick = e => e.shiftKey ? pick(k) : fireMeme(k);
+      b.onmouseenter = () => hoverMeme = k;
+      b.onmouseleave = () => hoverMeme = null;
+    }
+    box.appendChild(b);
+  }
+  paintKeys();
 }
-paintKeys();
+board();
+function saveBoard() { store.set("telao-custom", JSON.stringify(custom)); store.set("telao-hidden", JSON.stringify([...hidden])); }
+function removeMeme(k) {
+  if (k.startsWith("x:")) { custom = custom.filter(m => m[0] !== k); memeLabel.delete(k); }
+  else hidden.has(k) ? hidden.delete(k) : hidden.add(k);
+  saveBoard(); board();
+}
+$("editMemes").onclick = () => {
+  editing = !editing;
+  $("editMemes").textContent = editing ? "pronto" : "editar";
+  $("addMeme").classList.toggle("hidden", !editing);
+  board();
+};
+$("addMeme").onsubmit = e => {
+  e.preventDefault();
+  const m = $("newUrl").value.trim().match(/^https?:\/\/(?:www\.)?myinstants\.com\/media\/sounds\/([\w.-]{1,80})\.mp3$/i);
+  const label = cleanLabel($("newLabel").value);
+  if (!m) return toast("Use o link .mp3 do myinstants (botão direito em “Download MP3”).");
+  if (!label) return toast("Dê um nome para o meme.");
+  const k = "x:" + m[1];
+  custom = custom.filter(c => c[0] !== k); custom.push([k, label]); memeLabel.set(k, label);
+  saveBoard(); board();
+  $("newUrl").value = $("newLabel").value = "";
+  toast(`${label} adicionado.`);
+};
+$("resetMemes").onclick = () => { custom.forEach(([k]) => memeLabel.delete(k)); custom = []; hidden.clear(); saveBoard(); board(); };
 
 function fireMeme(k) {
   if (cooldown) return;
   cooldown = true; document.querySelectorAll(".meme").forEach(x => x.disabled = true);
   setTimeout(() => { cooldown = false; document.querySelectorAll(".meme").forEach(x => x.disabled = false); }, 1500);
-  broadcast({ t: "meme", k });
+  broadcast({ t: "meme", k, label: memeLabel.get(k) });
   playMeme(k, "me");
 }
 function bindKey(key, k) {
@@ -573,21 +644,25 @@ function paintKeys() {
   document.querySelectorAll(".meme").forEach(b => {
     b.querySelector("kbd")?.remove();
     const key = KEYS.find(x => bound[x] === b.dataset.k);
-    if (key) { const kb = document.createElement("kbd"); kb.textContent = key.toUpperCase(); b.append(kb); }
+    if (key && !editing) { const kb = document.createElement("kbd"); kb.textContent = key.toUpperCase(); b.append(kb); }
   });
 }
-$("memeVol").oninput = e => { memeVol = e.target.value / 100; $("memePct").textContent = e.target.value + "%"; playing.forEach(a => a.volume = memeVol); };
+$("memeVol").oninput = e => {
+  memeVol = e.target.value / 100; $("memePct").textContent = e.target.value + "%";
+  store.set("telao-memevol", e.target.value);
+  playing.forEach(a => a.volume = memeVol); modeAudio.forEach(a => a.volume = memeVol);
+};
 $("hush").onclick = () => { playing.forEach(a => a.pause()); playing.clear(); };
 
-function playMeme(k, from) {
-  if (!memeLabel.has(k)) return;                       // only our own list, never a URL from the wire
+function playMeme(k, from, label) {
+  if (!validKey(k)) return;                            // a myinstants slug at most, never an arbitrary URL
   const now = Date.now();
   if (from !== "me" && now - (lastFrom.get(from) || 0) < 1000) return;
   lastFrom.set(from, now);
-  const btn = document.querySelector(`.meme[data-k="${k}"]`);
+  const btn = document.querySelector(`.meme[data-k="${CSS.escape(k)}"]`);
   btn?.classList.add("hit"); setTimeout(() => btn?.classList.remove("hit"), 600);
   soundMeme(k);
-  toast(`${from === "me" ? "Você" : nameOf(from)}: ${memeLabel.get(k)}`);
+  toast(`${from === "me" ? "Você" : nameOf(from)}: ${memeLabel.get(k) || cleanLabel(label) || "meme"}`);
 }
 function soundMeme(k, gain = 1) {
   if (audio.deaf || memeVol === 0) return;
@@ -615,14 +690,14 @@ function fireCombo(ks) {
   playCombo(ks, "me");
 }
 function randomCombo() {
-  const pool = MEMES.map(m => m[0]).sort(() => Math.random() - .5);
+  const pool = [...MEMES, ...custom].map(m => m[0]).filter(k => !hidden.has(k)).sort(() => Math.random() - .5);
   fireCombo(pool.slice(0, 5 + Math.floor(Math.random() * 3)));
 }
 $("comboRandom").onclick = randomCombo;
 $("trayFire").onclick = () => fireCombo([...tray]);
 $("trayClear").onclick = () => { tray.splice(0); pick(""); };
 function playCombo(ks, from) {
-  ks = (Array.isArray(ks) ? ks : []).filter(k => memeLabel.has(k)).slice(0, 8);
+  ks = (Array.isArray(ks) ? ks : []).filter(validKey).slice(0, 8);
   if (ks.length < 2) return;
   const now = Date.now();
   if (from !== "me" && now - (lastCombo.get(from) || 0) < 4000) return;
@@ -813,6 +888,7 @@ function startMode(name, track, from) {
     if (m.intro) { play(m.intro, 0); play(track, 2600); } else play(track, 0);
   }
   haze.start(name === "pod" ? 0 : 1);
+  props(name);
   setTimeout(stopMode, MODE_MS);
 }
 function stopMode() {
@@ -820,7 +896,39 @@ function stopMode() {
   $("room").classList.remove(mode);
   modeAudio.forEach(a => { const fade = setInterval(() => { a.volume = Math.max(0, a.volume - .08); if (!a.volume) { a.pause(); clearInterval(fade); } }, 80); });
   modeAudio = []; mode = null;
+  $("modeFx").classList.add("out");
+  setTimeout(() => { if (!mode) $("modeFx").replaceChildren(); }, 1300);
   setTimeout(() => { if (!mode) haze.stop(); }, 1600);
+}
+
+// Pod mode: a giant pod hits to the beat while more pods fly across the room.
+// 4:20 mode: Snoop Dogg dances in from the sides.
+function props(name) {
+  const box = $("modeFx"); box.replaceChildren(); box.classList.remove("out");
+  const img = (src, cls) => { const i = new Image(); i.src = src; i.className = cls; i.alt = ""; box.append(i); return i; };
+  if (name === "pod") {
+    img("img/pod.webp", "pod-boss").animate([{ opacity: 0, scale: .2 }, { opacity: 1, scale: 1 }], { duration: 600, easing: "cubic-bezier(.2,1.6,.4,1)" });
+    const fly = () => {
+      if (mode !== "pod") return;
+      const p = img("img/pod.webp", "pod-fly");
+      const W = innerWidth, H = innerHeight, fromLeft = Math.random() < .5;
+      const y0 = Math.random() * H * .8, y1 = Math.random() * H * .8, spin = (Math.random() < .5 ? -1 : 1) * (360 + Math.random() * 540);
+      p.animate([
+        { transform: `translate(${fromLeft ? -220 : W + 40}px,${y0}px) rotate(0)` },
+        { transform: `translate(${fromLeft ? W + 40 : -220}px,${y1}px) rotate(${spin}deg)` },
+      ], { duration: 2600 + Math.random() * 2200, easing: "linear" }).onfinish = () => p.remove();
+      setTimeout(fly, 450 + Math.random() * 700);
+    };
+    fly();
+  } else {
+    [[.5, "", 0], [.12, " mirror", 450], [.88, " mirror", 900]].forEach(([x, cls, delay], i) => {
+      const s = img("img/snoop.webp", "snoop" + cls);
+      const h = i ? "min(55vh,440px)" : "min(78vh,620px)";
+      s.style.height = h; s.style.left = x * 100 + "%"; s.style.marginLeft = `calc(${h} * -.193)`;
+      s.style.animationDelay = `-${i * .45}s`;
+      s.animate([{ transform: `translateY(110%)` }, { transform: "translateY(0)" }], { duration: 900, delay, easing: "cubic-bezier(.2,1.4,.4,1)", fill: "backwards" });
+    });
+  }
 }
 
 // One fragment shader, two looks: neon vapor swirls (pod) or thick rising smoke (weed).
