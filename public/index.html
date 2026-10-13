@@ -35,6 +35,10 @@ button[disabled]{opacity:.5;cursor:default}
 #grid{flex:1;display:grid;gap:8px;padding:8px;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));grid-auto-rows:1fr;min-height:0}
 .tile{position:relative;background:#000;border-radius:12px;overflow:hidden;border:1px solid var(--line);cursor:zoom-in}
 .tile video{width:100%;height:100%;object-fit:contain;display:block}
+.audio{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--dim);cursor:pointer;user-select:none}
+.audio input{accent-color:var(--hot);width:16px;height:16px}
+.tile .snd{position:absolute;right:10px;bottom:8px;padding:6px 12px;font-size:13px}
+.tile .snd.off{background:#000a;color:var(--fg);border:1px solid var(--line)}
 .tile span{position:absolute;left:10px;bottom:8px;font:500 12px "JetBrains Mono",monospace;background:#000a;padding:2px 8px;border-radius:6px}
 #empty{place-self:center;grid-column:1/-1;color:var(--dim);text-align:center}
 </style>
@@ -54,6 +58,7 @@ button[disabled]{opacity:.5;cursor:default}
   <div id="top">
     <div class="link"><code id="url"></code><button id="copy">Copiar link</button></div>
     <button id="share">Compartilhar minha tela</button>
+    <label class="audio"><input type="checkbox" id="withAudio"> com áudio</label>
     <button id="stop" class="ghost hidden">Parar</button>
     <div class="status" id="status"></div>
   </div>
@@ -150,7 +155,11 @@ function start(code, isHub, onTaken) {
     const hub = conns.get(hubId); hub ? hub.send({ t: "want" }) : alert("Conectando… tente de novo.");
   };
   async function begin() {
-    try { stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30 } }, audio: false }); }
+    try { stream = await navigator.mediaDevices.getDisplayMedia({
+      video: { frameRate: { ideal: 30 } },
+      audio: $("withAudio").checked && { echoCancellation: false, noiseSuppression: false, autoGainControl: false, suppressLocalAudioPlayback: false },
+      systemAudio: "include",
+    }); }
     catch { if (isHub) sharers.delete(myId); else conns.get(hubId)?.send({ t: "stop" }); return; }
     const t = stream.getVideoTracks()[0];
     t.contentHint = "detail"; t.onended = stop;
@@ -193,6 +202,13 @@ function addTile(id, stream, mine) {
     $("grid").appendChild(t);
   }
   const v = t.querySelector("video"); v.srcObject = stream; v.play().catch(() => {});
+  t.querySelector(".snd")?.remove();
+  if (!mine && stream.getAudioTracks().length) {
+    const b = document.createElement("button");
+    const paint = () => { b.className = "snd" + (v.muted ? " off" : ""); b.textContent = v.muted ? "🔇 ativar som" : "🔊 som ligado"; };
+    b.onclick = e => { e.stopPropagation(); v.muted = !v.muted; v.play().catch(() => {}); paint(); };
+    paint(); t.appendChild(b);
+  }
   $("empty").classList.add("hidden");
   refresh();
 }
