@@ -73,6 +73,25 @@ button:active{transform:translateY(1px)}
 .tile .ctl{position:absolute;right:8px;bottom:8px;display:flex;gap:8px;align-items:center;background:var(--tinta);border-radius:6px;padding:4px 10px 4px 4px;opacity:0;transition:opacity .15s;cursor:default}
 .tile:hover .ctl,.tile:focus-within .ctl,.tile .ctl.muted{opacity:1}
 .tile .ctl input{width:96px}
+.tile .ctl.bare{padding-right:4px}
+
+/* theater: one screen big, the rest in a strip below, sidebar out of the way */
+#theater[aria-pressed=true]{background:var(--papel);color:var(--tinta);box-shadow:none}
+#room.theater{grid-template-columns:1fr;background:#000}
+#room.theater #side,#room.theater .link,#room.theater .audio{display:none}
+#room.theater #top{background:transparent;padding:8px 10px;position:absolute;top:0;right:0;left:0;z-index:2;justify-content:flex-end;opacity:0;transition:opacity .2s}
+#room.theater #top:hover,#room.theater #top:focus-within{opacity:1}
+@media (hover:none){#room.theater #top{opacity:1;position:static}}
+#room.theater #top .logo{margin-right:auto}
+#room.theater #grid{grid-row:1/-1;display:flex;flex-wrap:wrap;align-content:flex-start;justify-content:center;gap:8px;padding:0 0 8px}
+#room.theater .tile{flex:0 0 200px;height:112px;border-radius:4px;cursor:pointer}
+#room.theater .tile.focus{order:-1;flex-basis:100%;height:calc(100% - 128px);border-radius:0;cursor:default}
+#room.theater.solo #grid{padding:0}
+#room.theater.solo .tile.focus{height:100%}
+#room.theater .tile:not(.focus){outline:2px solid transparent}
+#room.theater .tile:not(.focus):hover{outline-color:var(--papel)}
+#room.theater .tile:not(.focus) .name{font-size:14px;padding:4px 7px 3px}
+#room.theater .tile:not(.focus) .ctl{display:none}
 .ib{background:none;color:var(--giz);padding:5px 7px;border-radius:5px;font-size:15px;line-height:1}
 .ib:hover{background:var(--noite2)}
 .ib.muted{color:var(--rosa)}
@@ -90,6 +109,8 @@ input[type=range]{accent-color:var(--papel);min-width:0}
 .m .who{min-width:0;display:flex;align-items:baseline;gap:6px}
 .m .who b{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .m .who small{color:var(--giz2);font-size:12px}
+.rename{background:none;color:var(--giz2);font-size:12px;font-weight:500;padding:0 2px;text-decoration:underline;text-underline-offset:2px}
+.rename:hover{color:var(--papel)}
 .live{font-size:12px;font-weight:700;background:var(--rosa);color:#fff;padding:2px 8px;border-radius:99px}
 .m .vol{grid-column:2/-1;display:flex;align-items:center;gap:6px}
 .m .vol input{flex:1}
@@ -124,6 +145,7 @@ input[type=range]{accent-color:var(--papel);min-width:0}
     <button id="stop" class="no hidden">Parar de mostrar</button>
     <label class="audio"><input type="checkbox" id="withAudio"> com som</label>
     <button id="deaf" class="quiet" aria-pressed="false">Mutar tudo</button>
+    <button id="theater" class="quiet" aria-pressed="false" title="Atalho: T. Esc sai.">Modo teatro</button>
   </div>
   <div id="grid"><p id="empty"><strong>Telão apagado</strong><span>Ninguém está mostrando a tela. Clique em “Mostrar minha tela” para começar.</span></p></div>
   <aside id="side"><h2>Na sala</h2><div id="count"></div><div id="members"></div></aside>
@@ -140,7 +162,7 @@ const store = { get: k => { try { return localStorage.getItem(k); } catch { retu
 // Audio preferences are local to this viewer, keyed by peer id.
 const audio = { deaf: false, muted: new Map(), vol: new Map() };
 const names = new Map();     // peerId -> nickname
-let myName = "", render = () => {};
+let myName = "", render = () => {}, rename = () => {};
 
 const code = location.hash.slice(1).toLowerCase();
 $("nick").value = store.get("telao-nick") || "";
@@ -157,6 +179,8 @@ $("enter").onsubmit = e => {
   $("go").disabled = true;
   start(code || rand(6));
 };
+// A returning member opening a room link goes straight in.
+if (code && store.get("telao-nick")) { myName = store.get("telao-nick"); $("home").classList.add("hidden"); start(code); }
 
 // Every member has a random peer id. The room itself is a second peer, `telao-<code>`,
 // hosted by whichever member claimed it first: it hands newcomers the member list and
@@ -268,6 +292,13 @@ function start(code) {
     $("stop").classList.add("hidden"); $("share").classList.remove("hidden");
   }
 
+  rename = () => {
+    const n = prompt("Seu nome na sala:", myName)?.trim().slice(0, 24);
+    if (!n) return;
+    myName = n; store.set("telao-nick", n);
+    conns.forEach(c => c.send({ t: "hello", name: n }));
+    render();
+  };
   render = () => {
     const people = [{ id: "me", name: myName, me: true }, ...[...conns.keys()].map(id => ({ id, name: names.get(id) || "conectando…" }))];
     const live = document.querySelectorAll(".tile").length;
@@ -317,7 +348,8 @@ function apply(id) {
   v.muted = muted; v.volume = audio.vol.get(id) ?? 1;
   const ctl = t.querySelector(".ctl");
   ctl.classList.toggle("muted", muted);
-  ctl.querySelector(".ib").textContent = muted ? "🔇" : "🔊";
+  const mute = ctl.querySelector(".mute"); if (!mute) return;
+  mute.textContent = muted ? "🔇" : "🔊";
   ctl.querySelector("input").value = Math.round(v.volume * 100);
 }
 function applyAll() { document.querySelectorAll(".tile").forEach(t => apply(t.dataset.id)); }
@@ -343,7 +375,10 @@ function member(p) {
   const av = document.createElement("div"); av.className = "av"; av.style.background = color(p.name); av.textContent = (p.name[0] || "?").toUpperCase();
   const who = document.createElement("div"); who.className = "who";
   const b = document.createElement("b"); b.textContent = p.name; who.append(b);
-  if (p.me) { const s = document.createElement("small"); s.textContent = "você"; who.append(s); }
+  if (p.me) {
+    const s = document.createElement("small"); s.textContent = "você"; who.append(s);
+    const r = document.createElement("button"); r.className = "rename"; r.textContent = "trocar nome"; r.onclick = () => rename(); who.append(r);
+  }
   el.append(av, who);
   const badge = document.createElement("span");
   if (live) { badge.className = "live"; badge.textContent = "ao vivo"; }
@@ -361,32 +396,62 @@ function member(p) {
   return el;
 }
 
+/* ---------- theater ---------- */
+const view = { theater: false, focus: null };
+function theater(on, id) {
+  view.theater = on;
+  if (id) view.focus = id;
+  $("room").classList.toggle("theater", on);
+  $("theater").setAttribute("aria-pressed", on);
+  $("theater").textContent = on ? "Sair do teatro" : "Modo teatro";
+  layout();
+}
+function layout() {
+  const tiles = [...document.querySelectorAll(".tile")];
+  if (!tileOf(view.focus)) view.focus = tiles.find(t => t.dataset.id !== "me")?.dataset.id || tiles[0]?.dataset.id || null;
+  tiles.forEach(t => t.classList.toggle("focus", view.theater && t.dataset.id === view.focus));
+  $("room").classList.toggle("solo", tiles.length <= 1);
+}
+function fullscreen(t) { document.fullscreenElement ? document.exitFullscreen() : t.requestFullscreen(); }
+$("theater").onclick = () => theater(!view.theater);
+addEventListener("keydown", e => {
+  if (e.target.matches?.("input[type=text], input[type=range]") || $("room").classList.contains("hidden")) return;
+  if (e.key === "Escape" && view.theater && !document.fullscreenElement) theater(false);
+  else if (e.key.toLowerCase() === "t" && !e.metaKey && !e.ctrlKey) theater(!view.theater);
+});
+
 /* ---------- tiles ---------- */
 function addTile(id, stream) {
   let t = tileOf(id);
   if (!t) {
     t = document.createElement("div"); t.className = "tile"; t.dataset.id = id;
     t.innerHTML = `<video autoplay playsinline muted></video><span class="name"></span>`;
-    t.onclick = () => document.fullscreenElement ? document.exitFullscreen() : t.requestFullscreen();
+    t.onclick = () => { if (!t.classList.contains("focus")) theater(true, id); };
+    t.ondblclick = () => fullscreen(t);
     $("grid").appendChild(t);
   }
   const v = t.querySelector("video"); v.srcObject = stream;
   t.querySelector(".ctl")?.remove();
+  const ctl = document.createElement("div"); ctl.className = "ctl";
+  ctl.onclick = e => e.stopPropagation();
+  ctl.ondblclick = e => e.stopPropagation();
   if (id !== "me" && stream.getAudioTracks().length) {
-    const ctl = document.createElement("div"); ctl.className = "ctl";
-    ctl.innerHTML = `<button class="ib"></button><input type="range" min="0" max="100" data-vol="${id}">`;
-    ctl.onclick = e => e.stopPropagation();
-    ctl.querySelector("button").onclick = () => toggleMute(id);
+    ctl.innerHTML = `<button class="ib mute"></button><input type="range" min="0" max="100" data-vol="${id}" aria-label="Volume">`;
+    ctl.querySelector(".mute").onclick = () => toggleMute(id);
     ctl.querySelector("input").oninput = e => setVol(id, +e.target.value);
-    t.appendChild(ctl);
-  }
+  } else ctl.classList.add("bare");
+  const fs = document.createElement("button"); fs.className = "ib"; fs.textContent = "⛶"; fs.title = "Tela cheia (duplo clique)";
+  fs.onclick = () => fullscreen(t);
+  ctl.appendChild(fs); t.appendChild(ctl);
+  layout();
   apply(id);
-  v.play().catch(() => { v.muted = true; v.play(); });
+  v.play().catch(() => { audio.muted.set(id, true); apply(id); render(); v.play().catch(() => {}); });
   $("empty").classList.add("hidden");
   render();
 }
 function dropTile(id) {
   tileOf(id)?.remove();
+  layout();
   if (!document.querySelector(".tile")) $("empty").classList.remove("hidden");
   render();
 }
