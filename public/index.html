@@ -117,6 +117,20 @@ input[type=range]{accent-color:var(--papel);min-width:0}
 .m .vol input{flex:1}
 .m .vol span{font-size:12px;color:var(--giz2);width:36px;text-align:right;font-variant-numeric:tabular-nums}
 
+.board{margin-top:18px;padding-top:16px;border-top:2px solid var(--noite2)}
+.hint{color:var(--giz2);font-size:13px;padding:4px 6px 10px}
+#memes{display:flex;flex-wrap:wrap;gap:6px;padding:0 4px}
+.meme{font-size:13px;font-weight:500;padding:6px 10px;background:var(--noite2);color:var(--giz);border-radius:6px;text-align:left;white-space:normal;line-height:1.2}
+.meme:hover{background:var(--papel);color:var(--tinta)}
+.meme.hit{background:var(--rosa);color:#fff}
+.meme[disabled]{opacity:.5;cursor:default}
+.memevol{display:flex;align-items:center;gap:6px;padding:12px 4px 0}
+.memevol input{flex:1}
+.memevol span{font-size:12px;color:var(--giz2);width:36px;text-align:right;font-variant-numeric:tabular-nums}
+#toasts{position:fixed;left:14px;bottom:14px;display:flex;flex-direction:column-reverse;gap:6px;z-index:5;pointer-events:none}
+.toast{background:var(--papel);color:var(--tinta);font-weight:700;padding:8px 12px;border-radius:6px;box-shadow:4px 4px 0 var(--rosa);max-width:70vw}
+@media (prefers-reduced-motion:no-preference){.toast{animation:pop .25s cubic-bezier(.2,1.6,.4,1)}@keyframes pop{from{transform:scale(.6);opacity:0}}}
+
 @media (max-width:760px){
   #room{grid-template-columns:1fr;grid-template-rows:auto 1fr auto}
   #side{border-left:0;border-top:2px solid var(--noite2);max-height:34dvh}
@@ -149,7 +163,16 @@ input[type=range]{accent-color:var(--papel);min-width:0}
     <button id="theater" class="quiet" aria-pressed="false" title="Atalho: T. Esc sai.">Modo teatro</button>
   </div>
   <div id="grid"><p id="empty"><strong>Telão apagado</strong><span>Ninguém está mostrando a tela. Clique em “Mostrar minha tela” para começar.</span></p></div>
-  <aside id="side"><h2>Na sala</h2><div id="count"></div><div id="members"></div></aside>
+  <aside id="side">
+    <h2>Na sala</h2><div id="count"></div><div id="members"></div>
+    <section class="board">
+      <h2>Memes</h2>
+      <p class="hint">Toca para a sala toda.</p>
+      <div id="memes"></div>
+      <div class="memevol"><button class="ib" id="hush" title="Parar os memes tocando agora">■</button><input type="range" id="memeVol" min="0" max="100" value="70" aria-label="Volume dos memes"><span id="memePct">70%</span></div>
+    </section>
+  </aside>
+  <div id="toasts" aria-live="polite"></div>
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -163,7 +186,7 @@ const store = { get: k => { try { return localStorage.getItem(k); } catch { retu
 // Audio preferences are local to this viewer, keyed by peer id.
 const audio = { deaf: false, muted: new Map(), vol: new Map() };
 const names = new Map();     // peerId -> nickname
-let myName = "", render = () => {}, rename = () => {};
+let myName = "", render = () => {}, rename = () => {}, broadcast = () => {}, nameOf = id => id;
 
 const code = location.hash.slice(1).toLowerCase();
 $("nick").value = store.get("telao-nick") || "";
@@ -259,6 +282,7 @@ function start(code) {
     c.on("data", m => {
       if (m.t === "hello") { names.set(c.peer, String(m.name).slice(0, 24)); render(); }
       else if (m.t === "stop") dropTile(c.peer);
+      else if (m.t === "meme") playMeme(m.k, c.peer);
     });
     c.on("close", () => { conns.delete(c.peer); calls.delete(c.peer); names.delete(c.peer); dropTile(c.peer); });
   }
@@ -313,6 +337,8 @@ function start(code) {
     conns.forEach(c => c.send({ t: "hello", name: n }));
     render();
   };
+  broadcast = msg => conns.forEach(c => c.open && c.send(msg));
+  nameOf = id => id === "me" ? myName : names.get(id) || "alguém";
   render = () => {
     const people = [{ id: "me", name: myName, me: true }, ...[...conns.keys()].map(id => ({ id, name: names.get(id) || "conectando…" }))];
     const live = document.querySelectorAll(".tile").length;
@@ -410,6 +436,56 @@ function member(p) {
     vol.append(btn, r, pct); el.append(vol);
   }
   return el;
+}
+
+/* ---------- memes (myinstants) ---------- */
+const MEMES = [
+  ["faaah", "FAAAH"], ["voce-nao-tem-aura", "Você não tem aura"], ["auraa", "Auraa"],
+  ["pou-estourado_zIWCpMy", "Pou estourado"], ["maldito-traidor", "Maldito traidor"], ["rela-no-jacare", "Rela no jacaré"],
+  ["ilari-ilari-ilarie-troll", "Ilariê troll"], ["e-o-pix-nada-ainda", "E o pix? Nada ainda?"], ["rojao-super-estourado", "Rojão estourado"],
+  ["dom-dom-tava-aqui-no-baile", "Tava aqui no baile"], ["escreve-e-apaga", "Escreve e apaga"], ["hee-hee-levanta-pobre", "Levanta, pobre"],
+  ["aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-e-lutador", "AAAA é lutador"], ["hello-moto-estourado", "Hello Moto"], ["som-do-zap-zap-estourado", "Zap zap"],
+  ["a-risada-do-kiko", "Risada do Kiko"], ["bom-dia-magnata", "Bom dia, magnata"], ["abriu-o-audio", "Abriu o áudio"],
+  ["briga-de-gato", "Briga de gato"], ["dexter-meme", "Dexter"], ["psycho-scream-soundbible", "Grito"],
+];
+const memeUrl = k => `https://www.myinstants.com/media/sounds/${k}.mp3`;
+const memeLabel = new Map(MEMES);
+const playing = new Set(), lastFrom = new Map();
+let memeVol = 0.7, cooldown = false;
+
+for (const [k, label] of MEMES) {
+  const b = document.createElement("button"); b.className = "meme"; b.textContent = label; b.dataset.k = k;
+  b.onclick = () => {
+    if (cooldown) return;
+    cooldown = true; document.querySelectorAll(".meme").forEach(x => x.disabled = true);
+    setTimeout(() => { cooldown = false; document.querySelectorAll(".meme").forEach(x => x.disabled = false); }, 1500);
+    broadcast({ t: "meme", k });
+    playMeme(k, "me");
+  };
+  $("memes").appendChild(b);
+}
+$("memeVol").oninput = e => { memeVol = e.target.value / 100; $("memePct").textContent = e.target.value + "%"; playing.forEach(a => a.volume = memeVol); };
+$("hush").onclick = () => { playing.forEach(a => a.pause()); playing.clear(); };
+
+function playMeme(k, from) {
+  if (!memeLabel.has(k)) return;                       // only our own list, never a URL from the wire
+  const now = Date.now();
+  if (from !== "me" && now - (lastFrom.get(from) || 0) < 1000) return;
+  lastFrom.set(from, now);
+  const btn = document.querySelector(`.meme[data-k="${k}"]`);
+  btn?.classList.add("hit"); setTimeout(() => btn?.classList.remove("hit"), 600);
+  if (!audio.deaf && memeVol > 0) {
+    const a = new Audio(memeUrl(k)); a.volume = memeVol;
+    playing.add(a); a.onended = () => playing.delete(a);
+    a.play().catch(() => { playing.delete(a); toast(`Clique em qualquer lugar para ouvir os memes.`); });
+  }
+  toast(`${from === "me" ? "Você" : nameOf(from)}: ${memeLabel.get(k)}`);
+}
+function toast(text) {
+  const t = document.createElement("div"); t.className = "toast"; t.textContent = text;
+  $("toasts").appendChild(t);
+  while ($("toasts").children.length > 4) $("toasts").firstChild.remove();
+  setTimeout(() => t.remove(), 3000);
 }
 
 /* ---------- theater ---------- */
