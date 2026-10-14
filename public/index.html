@@ -61,6 +61,12 @@ button:active{transform:translateY(1px)}
 .yes:hover{background:#fff}
 .no{background:var(--rosa);color:#fff}
 .quiet{background:transparent;color:var(--giz);box-shadow:inset 0 0 0 2px var(--noite2)}
+#discordHelp{margin:auto;max-width:min(560px,calc(100% - 32px));border:0;border-radius:10px;padding:20px 22px;background:var(--papel);color:var(--tinta);box-shadow:8px 8px 0 var(--rosa)}
+#discordHelp::backdrop{background:rgba(18,15,56,.7)}
+#discordHelp h2{font:900 30px/1 var(--poster);text-transform:uppercase;margin-bottom:10px}
+#discordHelp ol{padding-left:20px;margin:10px 0;display:grid;gap:6px}
+#discordHelp form{margin-top:14px}
+#discordHelp .yes{background:var(--tinta);color:var(--papel)}
 .quiet:hover{box-shadow:inset 0 0 0 2px var(--giz2)}
 .quiet[aria-pressed=true]{background:var(--rosa);box-shadow:none;color:#fff}
 .note{font-size:13px;color:var(--giz2);max-width:34ch;line-height:1.3}
@@ -120,8 +126,19 @@ input[type=range]{accent-color:var(--papel);min-width:0}
 #cross{position:absolute;left:50%;top:50%;width:20px;height:20px;translate:-50% -50%;pointer-events:none;display:none;
   background:linear-gradient(var(--ciano),var(--ciano)) center/2px 100% no-repeat,linear-gradient(var(--ciano),var(--ciano)) center/100% 2px no-repeat}
 #range.locked #cross{display:block}
+#cross{--c:var(--cross,#fff);background:linear-gradient(var(--c),var(--c)) center/2px 100% no-repeat,linear-gradient(var(--c),var(--c)) center/100% 2px no-repeat;
+  filter:drop-shadow(0 0 1px #000)}
+.gset{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:13px;font-weight:700}
+.gset label{display:flex;align-items:center;gap:6px}
+.gset input,.gset select{font:inherit;font-weight:700;color:var(--giz);background:var(--tinta);border:0;border-radius:5px;padding:5px 7px}
+.gset input{width:72px}
+#gEdpi{color:var(--tinta);opacity:.75;font-weight:500}
+#ammo{position:absolute;right:14px;bottom:10px;display:flex;align-items:baseline;gap:6px;color:#fff;text-shadow:0 1px 3px #000;pointer-events:none}
+#ammo b{font:900 36px/1 var(--poster)}
+#ammo span{font-weight:700;opacity:.7}
+#ammo em{position:absolute;right:0;bottom:44px;font:900 18px/1 var(--poster);text-transform:uppercase;font-style:normal;color:var(--papel);white-space:nowrap}
 #range.locked #lockHint{display:none}
-#lockHint{position:absolute;left:0;right:0;bottom:10px;text-align:center;color:var(--giz);font-weight:700;pointer-events:none;text-shadow:0 1px 3px #000}
+#lockHint{position:absolute;left:0;right:0;top:10px;text-align:center;color:var(--giz);font-weight:700;pointer-events:none;text-shadow:0 1px 3px #000}
 #gFx{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 #range.cobra{animation:shake .35s}
 .pow{position:absolute;translate:-50% -50%;font:900 30px/1 var(--poster);text-transform:uppercase;white-space:nowrap;color:var(--papel);text-shadow:2px 2px 0 var(--rosa);animation:pow .7s ease-out forwards}
@@ -148,6 +165,9 @@ input[type=range]{accent-color:var(--papel);min-width:0}
 .m .who small{color:var(--giz2);font-size:12px}
 .rename{background:none;color:var(--giz2);font-size:12px;font-weight:500;padding:0 2px;text-decoration:underline;text-underline-offset:2px}
 .rename:hover{color:var(--papel)}
+.away{font-size:12px;font-weight:700;background:var(--noite2);color:var(--giz2);padding:2px 8px;border-radius:99px}
+#room.afk #side .board,#room.afk .arsenal,#room.afk #emptyPlay,#room.afk .ctl .troll{display:none}
+#away[aria-pressed=true]{background:var(--giz2);color:var(--noite)}
 .live{font-size:12px;font-weight:700;background:var(--rosa);color:#fff;padding:2px 8px;border-radius:99px}
 .m .vol{grid-column:2/-1;display:flex;align-items:center;gap:6px}
 .m .vol input{flex:1}
@@ -319,7 +339,9 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
     <button id="share" class="yes">Mostrar minha tela</button>
     <button id="stop" class="no hidden">Parar de mostrar</button>
     <span id="note" class="note hidden"></span>
+    <button id="discordTip" class="quiet" title="Como mandar o som do jogo sem a call">Tirar a voz do Discord</button>
     <button id="deaf" class="quiet" aria-pressed="false">Mutar tudo</button>
+    <button id="away" class="quiet" aria-pressed="false" title="Sem memes, modos, pegadinhas e joguinho para você. As lives continuam com som.">Modo ausente</button>
     <div class="arsenal" role="group" aria-label="Zoeira">
       <button class="ib arm" data-item="tomate" aria-pressed="false" title="Tomate (Z): arma e clica numa live">🍅</button>
       <button class="ib arm" data-item="ovo" aria-pressed="false" title="Ovo (X): arma e clica numa live">🥚</button>
@@ -336,9 +358,16 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
   </div>
   <div id="grid"><p id="empty"><strong>Telão apagado</strong><span>Ninguém está mostrando a tela. Clique em “Mostrar minha tela” para começar.</span><button id="emptyPlay" class="yes">Treinar mira enquanto isso</button></p>
     <div id="game" class="hidden" role="dialog" aria-label="Mira da Tropa">
-      <div class="ghead"><strong>Mira da Tropa</strong><label class="sens">Sensibilidade <input type="range" id="gSens" min="0.3" max="3" step="0.1"></label><span id="gTime"></span><button class="ib" id="gClose" title="Sair do jogo (Esc)">✕</button></div>
+      <div class="ghead"><strong>Mira da Tropa</strong><span id="gTime"></span><button class="ib" id="gClose" title="Sair do jogo (Esc)">✕</button></div>
+      <div class="gset">
+        <label>DPI <input type="number" id="gDpi" min="100" max="32000" step="50" inputmode="numeric"></label>
+        <label>Sensibilidade do Valorant <input type="number" id="gSens" min="0.01" max="10" step="0.01" inputmode="decimal"></label>
+        <span id="gEdpi"></span>
+        <label>Skin <select id="gSkin"></select></label>
+        <label>Mira <select id="gCross"><option value="#ffffff">Branca</option><option value="#3fd0ff">Ciano</option><option value="#7dff5a">Verde</option><option value="#ffe600">Amarela</option><option value="#ff3fa4">Rosa</option></select></label>
+      </div>
       <div class="gbody">
-        <div id="range"><canvas id="gCanvas"></canvas><div id="cross"></div><div id="gFx"></div><p id="lockHint">Clique no mapa para travar a mira. Esc solta o mouse.</p></div>
+        <div id="range"><canvas id="gCanvas"></canvas><div id="cross"></div><div id="gFx"></div><div id="ammo"><b id="ammoN">25</b><span>/ ∞</span><em id="reloading" class="hidden">Recarregando</em></div><p id="lockHint">Clique no mapa para travar a mira. R recarrega, Esc solta o mouse.</p></div>
         <div><ol id="gBoard"></ol><p id="gMsg"></p><button id="gAgain" class="yes hidden">Jogar de novo</button></div>
       </div>
     </div>
@@ -377,6 +406,18 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
       </form>
     </section>
   </aside>
+  <dialog id="discordHelp">
+    <h2>Som do jogo sem a voz do Discord</h2>
+    <p>O navegador manda o som do dispositivo de saída padrão do Windows. O truque é deixar o Discord tocar direto no fone, fora desse padrão. Faça uma vez e fica salvo:</p>
+    <ol>
+      <li>Instale o VB-Audio Virtual Cable (grátis, em vb-audio.com/Cable) e reinicie o PC.</li>
+      <li>Configurações do Windows › Sistema › Som › Saída: escolha <b>CABLE Input</b>. O jogo passa a tocar no cabo.</li>
+      <li>Para continuar ouvindo o jogo: aperte Win+R, digite <b>mmsys.cpl</b>, aba Gravação › CABLE Output › Propriedades › Escutar. Marque “Escutar este dispositivo” e escolha seu fone.</li>
+      <li>No Discord: Configurações › Voz e vídeo › Dispositivo de saída: escolha o seu fone, não “Padrão”.</li>
+    </ol>
+    <p>Pronto: o Telão manda só o que passa pelo cabo (jogo, música) e a call vai direto para o seu fone. Para desfazer, volte a saída do Windows para o fone.</p>
+    <form method="dialog"><button class="yes">Entendi</button></form>
+  </dialog>
   <div id="toasts" aria-live="polite"></div>
   <div id="comboFx" aria-hidden="true"></div>
   <canvas id="haze" aria-hidden="true"></canvas>
@@ -402,7 +443,10 @@ let myName = "", render = () => {}, rename = () => {}, broadcast = () => {}, nam
 // Tiles are keyed "me" locally; on the wire everyone is their peer id.
 let toWire = id => id, fromWire = id => id, announce = () => {};
 const canNotify = () => "Notification" in window && Notification.permission === "granted";
-const hello = () => ({ t: "hello", name: myName, notif: canNotify() });
+// Away mode keeps the screens but drops every meme, mode, prank and game, for this viewer only.
+let away = store.get("telao-away") === "1";
+const awayIds = new Set();
+const hello = () => ({ t: "hello", name: myName, notif: canNotify(), away });
 
 const code = location.hash.slice(1).toLowerCase();
 $("nick").value = store.get("telao-nick") || "";
@@ -496,7 +540,7 @@ function start(code) {
       render();
     });
     c.on("data", m => {
-      if (m.t === "hello") { names.set(c.peer, String(m.name).slice(0, 24)); notifOk.set(c.peer, m.notif === true); render(); }
+      if (m.t === "hello") { names.set(c.peer, String(m.name).slice(0, 24)); notifOk.set(c.peer, m.notif === true); m.away === true ? awayIds.add(c.peer) : awayIds.delete(c.peer); render(); }
       else if (m.t === "troll") onTroll(m, c.peer);
       else if (m.t === "stop") dropTile(c.peer);
       else if (m.t === "meme") playMeme(m.k, c.peer, m.label);
@@ -507,7 +551,7 @@ function start(code) {
       else if (m.t === "game") onGame(m, c.peer);
       else if (m.t === "gscore") onScore(m, c.peer);
     });
-    c.on("close", () => { conns.delete(c.peer); calls.delete(c.peer); names.delete(c.peer); dropTile(c.peer); });
+    c.on("close", () => { conns.delete(c.peer); calls.delete(c.peer); names.delete(c.peer); awayIds.delete(c.peer); dropTile(c.peer); });
   }
   function callPeer(id) {
     if (!stream) return;
@@ -541,6 +585,7 @@ function start(code) {
     addTile("me", stream);
     conns.forEach((_, id) => callPeer(id));
   }
+  $("discordTip").onclick = () => $("discordHelp").showModal();
   function note(msg) { $("note").textContent = msg; $("note").classList.toggle("hidden", !msg); }
   $("stop").onclick = stop;
   function stop() {
@@ -656,6 +701,7 @@ function member(p) {
   el.append(av, who);
   const badge = document.createElement("span");
   if (live) { badge.className = "live"; badge.textContent = "ao vivo"; }
+  else if (p.me ? away : awayIds.has(p.id)) { badge.className = "away"; badge.textContent = "ausente"; }
   el.append(badge);
   const h = hits.get(p.id);
   if (h) {
@@ -754,6 +800,7 @@ $("addMeme").onsubmit = e => {
 $("resetMemes").onclick = () => { custom.forEach(([k]) => memeLabel.delete(k)); custom = []; hidden.clear(); saveBoard(); board(); };
 
 function fireMeme(k) {
+  if (away) return toast("Você está no modo ausente.");
   if (cooldown) return;
   cooldown = true; document.querySelectorAll(".meme").forEach(x => x.disabled = true);
   setTimeout(() => { cooldown = false; document.querySelectorAll(".meme").forEach(x => x.disabled = false); }, 1500);
@@ -778,8 +825,19 @@ $("memeVol").oninput = e => {
   playing.forEach(a => a.volume = memeVol); modeAudio.forEach(a => a.volume = memeVol);
 };
 $("hush").onclick = () => { playing.forEach(a => a.pause()); playing.clear(); };
+function setAway(on) {
+  away = on; store.set("telao-away", on ? "1" : "0");
+  $("away").setAttribute("aria-pressed", on);
+  $("room").classList.toggle("afk", on);
+  if (on) { $("hush").click(); if (mode) stopMode(); closeGame(); }
+  announce(); render();
+}
+$("away").onclick = () => setAway(!away);
+$("away").setAttribute("aria-pressed", away);
+$("room").classList.toggle("afk", away);
 
 function playMeme(k, from, label) {
+  if (away) return;
   if (!validKey(k)) return;                            // a myinstants slug at most, never an arbitrary URL
   const now = Date.now();
   if (from !== "me" && now - (lastFrom.get(from) || 0) < 1000) return;
@@ -808,6 +866,7 @@ function pick(k) {
   $("trayFire").disabled = tray.length < 2;
 }
 function fireCombo(ks) {
+  if (away) return toast("Você está no modo ausente.");
   if (comboCooldown || ks.length < 2) return;
   comboCooldown = true; $("comboRandom").disabled = $("trayFire").disabled = true;
   setTimeout(() => { comboCooldown = false; $("comboRandom").disabled = false; $("trayFire").disabled = tray.length < 2; }, 5000);
@@ -822,6 +881,7 @@ $("comboRandom").onclick = randomCombo;
 $("trayFire").onclick = () => fireCombo([...tray]);
 $("trayClear").onclick = () => { tray.splice(0); pick(""); };
 function playCombo(ks, from) {
+  if (away) return;
   ks = (Array.isArray(ks) ? ks : []).filter(validKey).slice(0, 8);
   if (ks.length < 2) return;
   const now = Date.now();
@@ -955,7 +1015,7 @@ function showReact(id, e, from) {
 /* Sound effects are synthesized, so they need no files and follow the meme volume. */
 let ac;
 function sfx(kind) {
-  if (audio.deaf || memeVol === 0) return;
+  if (audio.deaf || away || memeVol === 0) return;
   ac ??= new AudioContext(); if (ac.state === "suspended") ac.resume();
   const t0 = ac.currentTime, out = ac.createGain(); out.gain.value = memeVol; out.connect(ac.destination);
   const noise = (dur, type, freq, gain, at = 0) => {
@@ -1046,6 +1106,7 @@ function closeTroll() { $("trollPop").classList.add("hidden"); trollTarget = nul
 addEventListener("pointerdown", e => { if (!e.target.closest("#trollPop") && !e.target.closest(".ctl")) closeTroll(); });
 
 function sendTroll(kind) {
+  if (away) return toast("Você está no modo ausente.");
   const id = trollTarget; if (!id || !tileOf(id)) return closeTroll();
   const key = id + kind, now = Date.now(), wait = kind === "bomb" ? 15000 : 6000;
   if (now - (trollSent.get(key) || 0) < wait) return toast(`Calma, espera uns segundos para fazer isso de novo.`);
@@ -1063,6 +1124,7 @@ function sendTroll(kind) {
 }
 const TROLL_TEXT = { ping: "uma mensagem falsa do Discord", join: "um alguém-entrou-na-call falso", whisper: "um sussurro", bomb: "uma bomba-relógio", notify: "uma notificação falsa" };
 function onTroll(m, from) {
+  if (away) return;
   if (!TROLL_TEXT[m.kind]) return;
   const victim = from === "me" ? m.target && fromWire(m.target) : fromWire(m.target);
   const now = Date.now();
@@ -1114,6 +1176,7 @@ let mode = null, modeEnd = 0, modeAudio = [], lastMode = new Map(), tigerLosses 
 document.querySelectorAll(".mode").forEach(b => b.onclick = () => fireMode(b.dataset.mode));
 
 function fireMode(name) {
+  if (away) return toast("Você está no modo ausente.");
   if (mode) return toast(`${MODES[mode].title} ainda está rolando.`);
   const tracks = MODES[name].tracks, track = tracks[Math.floor(Math.random() * tracks.length)];
   // The sender rolls the slot so everyone sees the same result. Mostly you lose, like the real thing.
@@ -1125,6 +1188,7 @@ function fireMode(name) {
   startMode(name, track, "me", reels, msg.cobra);
 }
 function startMode(name, track, from, reels, cobra) {
+  if (away) return;
   const m = MODES[name]; if (!m || !m.tracks.includes(track) || mode) return;
   const now = Date.now();
   if (from !== "me" && now - (lastMode.get(from) || 0) < 15000) return;
@@ -1443,8 +1507,32 @@ const loadThree = () => threeP ??= new Promise((ok, no) => {
   sc.onerror = () => { threeP = null; no(); };
   document.head.appendChild(sc);
 });
-$("gSens").value = +store.get("telao-sens") || 1;
-$("gSens").oninput = e => store.set("telao-sens", e.target.value);
+// Valorant turns 0.07 degrees per mouse count times the in-game sensitivity. With raw
+// mouse input the counts here are the same, so the same sens and DPI feel the same.
+const SKINS = {
+  padrao: ["Padrão", 0x3a3a44, 0x1f1f26, 0x9a9aa8],
+  prime: ["Prime", 0xf2efe6, 0xd4a83a, 0x5ad1ff],
+  reaver: ["Reaver", 0x1c1726, 0x4a3560, 0xff2b5a],
+  glitchpop: ["Glitchpop", 0x2a1f6b, 0xff3fa4, 0x3fd0ff],
+  oni: ["Oni", 0xf3f1ee, 0xc81e2b, 0xff4040],
+  elderflame: ["Elderflame", 0x3a2216, 0xff7a1a, 0xffb800],
+  tigrinho: ["Tigrinho", 0xffd400, 0xff7a1a, 0xfff3a0],
+};
+const MAG = 25, RELOAD_MS = 2500;
+$("gSkin").append(...Object.entries(SKINS).map(([k, [label]]) => new Option(label, k)));
+const gameSettings = { gDpi: ["telao-dpi", "800"], gSens: ["telao-vsens", "0.4"], gSkin: ["telao-skin", "prime"], gCross: ["telao-cross", "#3fd0ff"] };
+for (const [id, [key, def]] of Object.entries(gameSettings)) {
+  $(id).value = store.get(key) || def;
+  if (!$(id).value) $(id).value = def;
+  $(id).oninput = () => { store.set(key, $(id).value); paintSettings(); };
+}
+function paintSettings() {
+  const dpi = +$("gDpi").value || 800, sens = +$("gSens").value || .4;
+  $("gEdpi").textContent = `eDPI ${Math.round(dpi * sens)}, ${(360 / (.07 * sens) / dpi * 2.54).toFixed(1)} cm por volta`;
+  $("range").style.setProperty("--cross", $("gCross").value);
+  game?.range?.skin($("gSkin").value);
+}
+paintSettings();
 function gameSchedule(seed) {
   const r = seeded(seed), out = [];
   for (let at = 300; at < GAME_MS - 700;) {
@@ -1468,7 +1556,7 @@ function buildRange(cv) {
   const T = THREE, r = new T.WebGLRenderer({ canvas: cv, antialias: true });
   r.setPixelRatio(Math.min(devicePixelRatio, 2));
   const scene = new T.Scene(); scene.background = new T.Color(0x120f38); scene.fog = new T.Fog(0x120f38, 16, 34);
-  const cam = new T.PerspectiveCamera(62, 16 / 9, .1, 100); cam.position.set(0, 1.6, 0); cam.rotation.order = "YXZ";
+  const cam = new T.PerspectiveCamera(70, 16 / 9, .03, 100); cam.position.set(0, 1.6, 0); cam.rotation.order = "YXZ";
   scene.add(new T.HemisphereLight(0xece9ff, 0x1b1464, 1.15));
   const sun = new T.DirectionalLight(0xffffff, .75); sun.position.set(4, 9, 5); scene.add(sun);
   const lambert = c => new T.MeshLambertMaterial({ color: c });
@@ -1503,11 +1591,62 @@ function buildRange(cv) {
     return { g, part: hit.object.userData.part, at: hit.point };
   }
   function screen(v) { const p = v.clone().project(cam); return [(p.x + 1) / 2 * 100, (1 - p.y) / 2 * 100]; }
+
+  // First-person rifle built from boxes, held by the camera. Skins recolor its three materials.
+  scene.add(cam);
+  const gm = {
+    body: new T.MeshStandardMaterial({ roughness: .45, metalness: .5 }),
+    accent: new T.MeshStandardMaterial({ roughness: .3, metalness: .75 }),
+    glow: new T.MeshStandardMaterial({ emissiveIntensity: 1.8 }),
+  };
+  const gun = new T.Group(), HOLD = new T.Vector3(.2, -.19, -.4);
+  const part = (geo, mat, x, y, z, rx = 0) => { const p = new T.Mesh(geo, mat); p.position.set(x, y, z); p.rotation.x = rx; gun.add(p); return p; };
+  const box3 = (w, h, d) => new T.BoxGeometry(w, h, d);
+  part(box3(.07, .09, .42), gm.body, 0, 0, 0);                   // receiver
+  part(box3(.056, .065, .3), gm.accent, 0, .004, -.34);          // handguard
+  part(new T.CylinderGeometry(.013, .013, .2, 10), gm.body, 0, .012, -.58, Math.PI / 2); // barrel
+  part(box3(.03, .03, .05), gm.accent, 0, .012, -.7);            // muzzle brake
+  part(box3(.055, .13, .065), gm.accent, 0, -.11, -.07, -.28);   // magazine
+  part(box3(.045, .11, .05), gm.body, 0, -.085, .12, .38);       // grip
+  part(box3(.06, .085, .24), gm.accent, 0, -.012, .31);          // stock
+  part(box3(.024, .035, .14), gm.body, 0, .065, -.03);           // sight
+  part(box3(.074, .014, .4), gm.glow, 0, .028, -.02);            // glow line
+  part(box3(.01, .03, .26), gm.glow, .03, -.005, -.34);          // handguard glow
+  gun.position.copy(HOLD); gun.rotation.y = .05;
+  cam.add(gun);
+  const flashTex = (() => {
+    const c = Object.assign(document.createElement("canvas"), { width: 64, height: 64 }), x = c.getContext("2d");
+    const grad = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, "rgba(255,255,230,1)"); grad.addColorStop(.35, "rgba(255,190,80,.9)"); grad.addColorStop(1, "rgba(255,120,0,0)");
+    x.fillStyle = grad; x.fillRect(0, 0, 64, 64); return new T.CanvasTexture(c);
+  })();
+  const flash = new T.Sprite(new T.SpriteMaterial({ map: flashTex, blending: T.AdditiveBlending, depthWrite: false }));
+  flash.position.set(0, .012, -.76); flash.scale.setScalar(.22); flash.visible = false; gun.add(flash);
+  const flashLight = new T.PointLight(0xffb050, 0, 3); flashLight.position.copy(flash.position); gun.add(flashLight);
+  function skin(k) {
+    const [, body, accent, glow] = SKINS[k] || SKINS.prime;
+    gm.body.color.setHex(body); gm.accent.color.setHex(accent); gm.glow.color.setHex(glow); gm.glow.emissive.setHex(glow);
+  }
+  skin($("gSkin").value);
+  let kick = 0, flashUntil = 0, reloadFrom = 0, last = performance.now();
+  function fire() { kick = 1; flashUntil = performance.now() + 45; flash.material.rotation = Math.random() * Math.PI; }
+  function reload() { reloadFrom = performance.now(); }
+
   let raf = 0;
   function frame() {
     raf = requestAnimationFrame(frame);
+    const t = performance.now(), dt = Math.min(.05, (t - last) / 1000); last = t;
+    kick *= Math.exp(-dt * 16);
+    const rl = reloadFrom ? Math.min(1, (t - reloadFrom) / RELOAD_MS) : 1, dip = Math.sin(Math.PI * rl);
+    if (rl >= 1) reloadFrom = 0;
+    gun.position.set(HOLD.x, HOLD.y - dip * .22, HOLD.z + kick * .07);
+    gun.rotation.set(kick * .14, .05, dip * .6);
+    flash.visible = t < flashUntil; flashLight.intensity = flash.visible ? 3 : 0;
     const w = cv.clientWidth, h = cv.clientHeight;
-    if (cv.width !== Math.round(w * r.getPixelRatio()) || cv.height !== Math.round(h * r.getPixelRatio())) { r.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); }
+    if (cv.width !== Math.round(w * r.getPixelRatio()) || cv.height !== Math.round(h * r.getPixelRatio())) {
+      // Valorant's 103 degrees horizontal field of view, whatever the box's shape.
+      r.setSize(w, h, false); cam.aspect = w / h; cam.fov = 2 * Math.atan(Math.tan(103 / 2 * Math.PI / 180) / cam.aspect) * 180 / Math.PI; cam.updateProjectionMatrix();
+    }
     cam.rotation.set(look.pitch, look.yaw, 0);
     const now = performance.now();
     for (const g of bots) {
@@ -1522,22 +1661,24 @@ function buildRange(cv) {
     r.render(scene, cam);
   }
   frame();
-  return { look, spawn, kill, shoot, screen, dispose() { cancelAnimationFrame(raf); r.dispose(); r.forceContextLoss(); } };
+  return { look, spawn, kill, shoot, screen, skin, fire, reload, dispose() { cancelAnimationFrame(raf); r.dispose(); r.forceContextLoss(); } };
 }
 function startGame() {
+  if (away) return toast("Você está no modo ausente.");
   if (game && !game.finished) return toast("Já tem uma partida rolando.");
   const m = { t: "game", r: rand(6), seed: crypto.getRandomValues(new Uint32Array(1))[0] };
   broadcast(m); playGame(m, "me");
 }
 function onGame(m, from) {
+  if (away) return;
   if (game && !game.finished) return;
   playGame(m, from);
   toast(`${nameOf(from)} chamou uma partida de Mira da Tropa.`);
 }
 async function playGame(m, from) {
   closeGame();
-  const g = game = { r: m.r, score: 0, shots: 0, hits: 0, heads: 0, done: false, finished: false, timers: [], players: new Map([["me", { s: 0, done: false }]]) };
-  names.forEach((_, id) => g.players.set(id, { s: 0, done: false }));
+  const g = game = { r: m.r, ammo: MAG, reloading: false, score: 0, shots: 0, hits: 0, heads: 0, done: false, finished: false, timers: [], players: new Map([["me", { s: 0, done: false }]]) };
+  names.forEach((_, id) => awayIds.has(id) || g.players.set(id, { s: 0, done: false }));
   const later = (fn, ms) => g.timers.push(setTimeout(fn, ms));
   $("game").classList.remove("hidden"); $("gAgain").classList.add("hidden"); $("gTime").textContent = "";
   $("gMsg").textContent = `${from === "me" ? "Você" : nameOf(from)} chamou a partida. Cabeça vale 3, corpo 1. Não atira no tigrinho.`;
@@ -1555,10 +1696,11 @@ async function playGame(m, from) {
   box.onpointerdown = e => {
     e.preventDefault();
     if (e.pointerType === "mouse" && !locked()) box.requestPointerLock?.({ unadjustedMovement: true })?.catch?.(() => box.requestPointerLock());
-    if (!g.playing) return;
+    if (!g.playing || g.reloading) return;
     const rc = box.getBoundingClientRect();
     const nx = locked() ? 0 : (e.clientX - rc.left) / rc.width * 2 - 1, ny = locked() ? 0 : -((e.clientY - rc.top) / rc.height * 2 - 1);
-    g.shots++; sfx("shot");
+    g.shots++; sfx("shot"); range.fire();
+    g.ammo--; paintAmmo(); if (!g.ammo) reload();
     const hit = range.shoot(nx, ny);
     if (!hit) return;
     const pts = PTS[hit.part]; g.score += pts; g.hits += pts > 0; g.heads += hit.part === "head";
@@ -1571,11 +1713,20 @@ async function playGame(m, from) {
   };
   g.onMove = e => {
     if (!locked()) return;
-    const k = .0022 * +$("gSens").value;
+    const k = .07 * (+$("gSens").value || .4) * Math.PI / 180;
     range.look.yaw = Math.max(-1.1, Math.min(1.1, range.look.yaw - e.movementX * k));
     range.look.pitch = Math.max(-.55, Math.min(.6, range.look.pitch - e.movementY * k));
   };
   document.addEventListener("mousemove", g.onMove);
+  function paintAmmo() { $("ammoN").textContent = g.ammo; $("reloading").classList.toggle("hidden", !g.reloading); }
+  function reload() {
+    if (g.reloading || g.ammo === MAG) return;
+    g.reloading = true; range.reload(); paintAmmo();
+    later(() => { g.reloading = false; g.ammo = MAG; paintAmmo(); }, RELOAD_MS);
+  }
+  g.onKey = e => { if (e.key.toLowerCase() === "r" && !e.repeat && g.playing) reload(); };
+  document.addEventListener("keydown", g.onKey);
+  paintAmmo();
   [3, 2, 1].forEach((n, i) => later(() => { $("gTime").textContent = n; sfx("tick"); }, i * 1000));
   later(() => {
     sfx("tickhi"); g.playing = true;
@@ -1639,6 +1790,7 @@ function closeGame() {
   if (!game.done) { game.done = true; sendScore(); }
   game.range?.dispose();
   if (game.onMove) document.removeEventListener("mousemove", game.onMove);
+  if (game.onKey) document.removeEventListener("keydown", game.onKey);
   if (document.pointerLockElement) document.exitPointerLock();
   $("range").onpointerdown = null; $("gFx").replaceChildren();
   game = null;
@@ -1676,7 +1828,7 @@ function addTile(id, stream) {
     if (id !== "me") ctl.innerHTML = `<span class="nosound">sem som</span>`;
   }
   if (id !== "me") {
-    const tr = document.createElement("button"); tr.className = "ib"; tr.textContent = "😈"; tr.title = "Atrapalhar quem está ao vivo";
+    const tr = document.createElement("button"); tr.className = "ib troll"; tr.textContent = "😈"; tr.title = "Atrapalhar quem está ao vivo";
     tr.onclick = () => openTroll(id, tr); ctl.appendChild(tr);
   }
   const fs = document.createElement("button"); fs.className = "ib"; fs.textContent = "⛶"; fs.title = "Tela cheia (duplo clique)";
