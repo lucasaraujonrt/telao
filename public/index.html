@@ -100,6 +100,42 @@ input[type=range]{accent-color:var(--papel);min-width:0}
 #empty{place-self:center;grid-column:1/-1;text-align:center;max-width:30ch}
 #empty strong{display:block;font:900 clamp(40px,6vw,72px)/.9 var(--poster);text-transform:uppercase;color:var(--noite2);margin-bottom:10px}
 #empty span{color:var(--giz2)}
+#empty button{margin-top:16px;box-shadow:4px 4px 0 var(--rosa)}
+.gamebtn{width:calc(100% - 8px);margin:0 4px;display:flex;justify-content:space-between;align-items:center;font:900 20px/1 var(--poster);text-transform:uppercase;box-shadow:4px 4px 0 var(--rosa)}
+.gamebtn kbd{font:700 11px/1 Archivo,sans-serif;opacity:.6}
+/* Mira da Tropa: a yellow poster card laid over the screens, holding a 3D range */
+#grid{position:relative}
+#game{position:absolute;z-index:6;left:50%;top:50%;translate:-50% -50%;width:min(1000px,calc(100% - 24px));max-height:calc(100% - 20px);overflow:auto;
+  background:var(--papel);color:var(--tinta);border-radius:10px;padding:12px 16px 16px;box-shadow:8px 8px 0 var(--rosa);display:grid;gap:10px}
+.ghead{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.ghead strong{font:900 38px/1 var(--poster);text-transform:uppercase;margin-right:auto}
+.sens{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700}
+.sens input{width:90px;accent-color:var(--tinta)}
+#gTime{font:900 38px/1 var(--poster);font-variant-numeric:tabular-nums;min-width:2.2ch;text-align:right}
+#gClose{background:var(--tinta);color:var(--giz)}
+.gbody{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:16px;align-items:start}
+#range{position:relative;aspect-ratio:16/9;max-height:62vh;border-radius:6px;overflow:hidden;background:var(--noite);cursor:crosshair;touch-action:none;user-select:none}
+#range.locked{cursor:none}
+#gCanvas{display:block;width:100%;height:100%}
+#cross{position:absolute;left:50%;top:50%;width:20px;height:20px;translate:-50% -50%;pointer-events:none;display:none;
+  background:linear-gradient(var(--ciano),var(--ciano)) center/2px 100% no-repeat,linear-gradient(var(--ciano),var(--ciano)) center/100% 2px no-repeat}
+#range.locked #cross{display:block}
+#range.locked #lockHint{display:none}
+#lockHint{position:absolute;left:0;right:0;bottom:10px;text-align:center;color:var(--giz);font-weight:700;pointer-events:none;text-shadow:0 1px 3px #000}
+#gFx{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+#range.cobra{animation:shake .35s}
+.pow{position:absolute;translate:-50% -50%;font:900 30px/1 var(--poster);text-transform:uppercase;white-space:nowrap;color:var(--papel);text-shadow:2px 2px 0 var(--rosa);animation:pow .7s ease-out forwards}
+.pow.head{font-size:40px;color:#fff;text-shadow:2px 2px 0 var(--rosa),-2px -2px 0 var(--ciano)}
+.pow.bad{color:#ff2a2a;text-shadow:2px 2px 0 var(--tinta)}
+@keyframes pow{to{transform:translateY(-60px) scale(1.25);opacity:0}}
+#gBoard{list-style:none;padding:0;display:grid;gap:5px}
+#gBoard li{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--tinta);color:var(--giz);border-radius:6px;padding:6px 10px;font-weight:700}
+#gBoard li.me{box-shadow:inset 0 0 0 2px var(--rosa)}
+#gBoard span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#gBoard b{font:900 24px/1 var(--poster)}
+#gMsg{font-weight:500;margin-top:10px}
+#gAgain{margin-top:10px;width:100%;background:var(--tinta);color:var(--papel)}
+@media (max-width:700px){.gbody{grid-template-columns:1fr}}
 
 #side{background:var(--noite);border-left:2px solid var(--noite2);overflow:auto;padding:16px 12px}
 #side h2{font:900 26px/1 var(--poster);text-transform:uppercase;color:var(--papel);padding:0 6px}
@@ -298,7 +334,15 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
     </div>
     <button id="theater" class="quiet" aria-pressed="false" title="Atalho: T. Esc sai.">Modo teatro</button>
   </div>
-  <div id="grid"><p id="empty"><strong>Telão apagado</strong><span>Ninguém está mostrando a tela. Clique em “Mostrar minha tela” para começar.</span></p></div>
+  <div id="grid"><p id="empty"><strong>Telão apagado</strong><span>Ninguém está mostrando a tela. Clique em “Mostrar minha tela” para começar.</span><button id="emptyPlay" class="yes">Treinar mira enquanto isso</button></p>
+    <div id="game" class="hidden" role="dialog" aria-label="Mira da Tropa">
+      <div class="ghead"><strong>Mira da Tropa</strong><label class="sens">Sensibilidade <input type="range" id="gSens" min="0.3" max="3" step="0.1"></label><span id="gTime"></span><button class="ib" id="gClose" title="Sair do jogo (Esc)">✕</button></div>
+      <div class="gbody">
+        <div id="range"><canvas id="gCanvas"></canvas><div id="cross"></div><div id="gFx"></div><p id="lockHint">Clique no mapa para travar a mira. Esc solta o mouse.</p></div>
+        <div><ol id="gBoard"></ol><p id="gMsg"></p><button id="gAgain" class="yes hidden">Jogar de novo</button></div>
+      </div>
+    </div>
+  </div>
   <aside id="side">
     <h2>Na sala</h2><div id="count"></div><div id="members"></div>
     <section class="board">
@@ -309,6 +353,11 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
         <button class="mode weed" data-mode="weed"><span>🌿</span>4:20<kbd>M</kbd></button>
         <button class="mode tiger" data-mode="tiger"><span>🐯</span>Tigrinho<kbd>G</kbd></button>
       </div>
+    </section>
+    <section class="board">
+      <h2>Joguinho</h2>
+      <p class="hint">Para a fila: 30 segundos de treino de mira estilo Valorant, a sala toda junto. Cabeça vale 3, corpo 1, atirar no tigrinho tira 3.</p>
+      <button id="gamePlay" class="yes gamebtn">🎯 Mira da Tropa<kbd>J</kbd></button>
     </section>
     <section class="board">
       <div class="boardhead"><h2>Memes</h2><button class="rename" id="editMemes">editar</button></div>
@@ -386,7 +435,7 @@ function start(code) {
   peer.on("open", id => { myId = id; enterRoom(code); joinHub(); render(); });
   addEventListener("pagehide", () => { hub?.peer.destroy(); peer.destroy(); });
   window.telaoDebug = () => ({ me: myId, hosting: !!hub, claiming, hubOpen: !!hubConn?.open, members: [...conns.keys()], directory: hub && [...hub.conns.keys()] });
-  peer.on("disconnected", () => peer.reconnect());
+  peer.on("disconnected", () => peer.destroyed || peer.reconnect());
   peer.on("error", e => {
     if (e.type === "peer-unavailable") { if (String(e.message).includes(hubId)) claimHub(); return; }
     if (e.type !== "disconnected" && e.type !== "network") console.warn("peer", e.type, e);
@@ -404,7 +453,7 @@ function start(code) {
     claiming = true;
     const h = new Peer(hubId);
     h.on("open", () => { claiming = false; hub = { peer: h, conns: new Map(), sharers: new Set() }; joinHub(); });
-    h.on("disconnected", () => h.reconnect());
+    h.on("disconnected", () => h.destroyed || h.reconnect());
     h.on("error", e => { if (e.type === "unavailable-id") { claiming = false; h.destroy(); setTimeout(joinHub, 300); } });
     h.on("connection", c => {
       c.on("open", () => { watch(c); hub.conns.set(c.peer, c); c.send({ t: "peers", ids: [...hub.conns.keys()].filter(i => i !== c.peer) }); });
@@ -455,6 +504,8 @@ function start(code) {
       else if (m.t === "react") showReact(fromWire(m.target), m.e, c.peer);
       else if (m.t === "throw") landThrow(fromWire(m.target), m.item, m.x, m.y, c.peer);
       else if (m.t === "mode") startMode(m.mode, m.track, c.peer, m.reels, m.cobra);
+      else if (m.t === "game") onGame(m, c.peer);
+      else if (m.t === "gscore") onScore(m, c.peer);
     });
     c.on("close", () => { conns.delete(c.peer); calls.delete(c.peer); names.delete(c.peer); dropTile(c.peer); });
   }
@@ -475,17 +526,16 @@ function start(code) {
     try { stream = await navigator.mediaDevices.getDisplayMedia({
       video: { frameRate: { ideal: 30 } },
       audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, suppressLocalAudioPlayback: false },
-      // System audio would carry the Discord call. Only a browser tab's own audio may go out.
-      systemAudio: "exclude",
+      // The whole PC's audio goes out, game included. That also carries the Discord call;
+      // viewers start muted and pick whose sound they hear.
+      systemAudio: "include",
+      windowAudio: "system",
       selfBrowserSurface: "exclude",
     }); }
     catch { hubConn?.send({ t: "stop" }); return; }
     const t = stream.getVideoTracks()[0];
-    const tabAudio = t.getSettings().displaySurface === "browser";
-    if (!tabAudio) stream.getAudioTracks().forEach(a => { a.stop(); stream.removeTrack(a); });
-    note(stream.getAudioTracks().length ? "Mandando a tela com o som desta aba."
-      : tabAudio ? "Sem som: marque “Compartilhar áudio da guia” no seletor."
-      : "Sem som: tela e janela vão mudas para o Discord não vazar. Para ter som, compartilhe uma aba.");
+    note(stream.getAudioTracks().length ? "Mandando a tela com o som do PC (a voz do Discord vai junto)."
+      : "Sem som: compartilhe a tela inteira e marque “Compartilhar áudio do sistema” no seletor.");
     t.contentHint = "detail"; t.onended = stop;
     $("share").classList.add("hidden"); $("stop").classList.remove("hidden");
     addTile("me", stream);
@@ -949,6 +999,9 @@ function sfx(kind) {
   else if (kind === "tickhi") { out.gain.value = 1; noise(.02, "highpass", 3500, 1.4); thump(2600, 1800, .04, .5); }
   else if (kind === "tomate") { noise(.4, "lowpass", 900, 1.3); thump(170, 45, .28, .9); }
   else if (kind === "ovo") { [0, .025, .06].forEach(a => noise(.03, "highpass", 2600, .9, a)); noise(.3, "lowpass", 1300, .8, .07); }
+  else if (kind === "shot") { out.gain.value = memeVol * .6; noise(.12, "lowpass", 2600, 1.6); thump(140, 45, .1, .7); }
+  else if (kind === "punch") { noise(.07, "lowpass", 1800, 1.4); thump(190, 55, .14, .9); }
+  else if (kind === "buzz") { const o = ac.createOscillator(), g = ac.createGain(); o.type = "sawtooth"; o.frequency.value = 98; g.gain.setValueAtTime(.3, t0); g.gain.setValueAtTime(.3, t0 + .3); g.gain.linearRampToValueAtTime(0, t0 + .36); o.connect(g).connect(out); o.start(t0); o.stop(t0 + .36); }
   else if (kind === "chinelo") { noise(.1, "highpass", 1100, 1.8); thump(240, 80, .09, .7); }
 }
 
@@ -1365,8 +1418,9 @@ addEventListener("keydown", e => {
   if (e.target.matches?.("input[type=text]") || $("room").classList.contains("hidden")) return;
   if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
   const k = e.key.toLowerCase();
-  if (k === "escape") { if (!$("trollPop").classList.contains("hidden")) closeTroll(); else if (armed) arm(null); else if (view.theater && !document.fullscreenElement) theater(false); return; }
+  if (k === "escape") { if (!$("trollPop").classList.contains("hidden")) closeTroll(); else if (game && Date.now() - unlockedAt > 400) closeGame(); else if (armed) arm(null); else if (view.theater && !document.fullscreenElement) theater(false); return; }
   if (e.target.matches?.("input[type=range]")) return;
+  if (game && !game.finished && k !== "j") return;
   if (KEYS.includes(k)) hoverMeme ? bindKey(k, hoverMeme) : bound[k] && fireMeme(bound[k]);
   else if (k >= "1" && k <= "5" && k.length === 1) react(REACTS[+k - 1]);
   else if (k === "z" || k === "x" || k === "c") arm(ITEMS["zxc".indexOf(k)]);
@@ -1375,7 +1429,223 @@ addEventListener("keydown", e => {
   else if (k === "m") fireMode("weed");
   else if (k === "g") fireMode("tiger");
   else if (k === "t") theater(!view.theater);
+  else if (k === "j") startGame();
 });
+
+/* ---------- joguinho: Mira da Tropa ---------- */
+// A Valorant-style aim range in Three.js. Everyone plays the same seeded 30 seconds of
+// bots on their own screen and the scores travel live, so no one referees who hit first.
+const GAME_MS = 30000, PTS = { head: 3, body: 1, tigre: -3 };
+let game = null, unlockedAt = 0, threeP = null;
+const loadThree = () => threeP ??= new Promise((ok, no) => {
+  if (window.THREE) return ok();
+  const sc = Object.assign(document.createElement("script"), { src: "https://unpkg.com/three@0.149.0/build/three.min.js", onload: ok });
+  sc.onerror = () => { threeP = null; no(); };
+  document.head.appendChild(sc);
+});
+$("gSens").value = +store.get("telao-sens") || 1;
+$("gSens").oninput = e => store.set("telao-sens", e.target.value);
+function gameSchedule(seed) {
+  const r = seeded(seed), out = [];
+  for (let at = 300; at < GAME_MS - 700;) {
+    const p = at / GAME_MS;
+    out.push({
+      at, kind: r() < .15 ? "tigre" : "bot", life: 1700 - 750 * p,
+      x: (r() - .5) * 10, z: -5.5 - r() * 7,
+      // From a third of the round on, some bots strafe like they are dodging.
+      amp: p > .33 && r() < .5 ? .8 + r() * 1.4 : 0, sp: .8 + r() * 1.2,
+    });
+    at += 760 - 360 * p + r() * 180;
+  }
+  return out;
+}
+function emojiTexture(ch) {
+  const c = Object.assign(document.createElement("canvas"), { width: 128, height: 128 }), x = c.getContext("2d");
+  x.font = "104px serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(ch, 64, 72);
+  return new THREE.CanvasTexture(c);
+}
+function buildRange(cv) {
+  const T = THREE, r = new T.WebGLRenderer({ canvas: cv, antialias: true });
+  r.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const scene = new T.Scene(); scene.background = new T.Color(0x120f38); scene.fog = new T.Fog(0x120f38, 16, 34);
+  const cam = new T.PerspectiveCamera(62, 16 / 9, .1, 100); cam.position.set(0, 1.6, 0); cam.rotation.order = "YXZ";
+  scene.add(new T.HemisphereLight(0xece9ff, 0x1b1464, 1.15));
+  const sun = new T.DirectionalLight(0xffffff, .75); sun.position.set(4, 9, 5); scene.add(sun);
+  const lambert = c => new T.MeshLambertMaterial({ color: c });
+  const floor = new T.Mesh(new T.PlaneGeometry(60, 60), lambert(0x1d1a52)); floor.rotation.x = -Math.PI / 2; scene.add(floor);
+  const lines = new T.GridHelper(60, 30, 0xff3fa4, 0x34308a); lines.position.y = .01; scene.add(lines);
+  const wall = new T.Mesh(new T.BoxGeometry(44, 7, .5), lambert(0xffe600)); wall.position.set(0, 3.5, -22); scene.add(wall);
+  for (let i = -3; i <= 3; i++) { const st = new T.Mesh(new T.BoxGeometry(2.2, 7.02, .52), lambert(0xff3fa4)); st.position.set(i * 6.3, 3.5, -22); scene.add(st); }
+  [[-5, -5.5], [4.2, -6.5], [-1.2, -12], [6.5, -13], [-7, -15]].forEach(([x, z]) => {
+    const box = new T.Mesh(new T.BoxGeometry(1.4, 1.1, 1.4), lambert(0x2c2878)); box.position.set(x, .55, z); scene.add(box);
+  });
+  const geo = { body: new T.CapsuleGeometry(.3, .75, 4, 12), head: new T.SphereGeometry(.21, 18, 14) };
+  const mat = { body: lambert(0xff3fa4), head: lambert(0xffe600), tigre: new T.SpriteMaterial({ map: emojiTexture("🐯") }) };
+  const bots = new Set(), ray = new T.Raycaster(), look = { yaw: 0, pitch: 0 };
+  function spawn(ev) {
+    const g = new T.Group();
+    if (ev.kind === "tigre") { const sp = new T.Sprite(mat.tigre); sp.scale.set(1.4, 1.4, 1); sp.position.y = 1.1; sp.userData.part = "tigre"; g.add(sp); }
+    else {
+      const body = new T.Mesh(geo.body, mat.body); body.position.y = .72; body.userData.part = "body";
+      const head = new T.Mesh(geo.head, mat.head); head.position.y = 1.5; head.userData.part = "head";
+      g.add(body, head);
+    }
+    g.position.set(ev.x, 0, ev.z); g.scale.setScalar(.01);
+    g.userData = { ev, born: performance.now(), dead: 0 };
+    scene.add(g); bots.add(g); return g;
+  }
+  function kill(g, how) { if (!g.userData.dead) { g.userData.dead = performance.now(); g.userData.how = how; } }
+  function shoot(nx, ny) {
+    ray.setFromCamera({ x: nx, y: ny }, cam);
+    const hit = ray.intersectObjects([...bots].filter(g => !g.userData.dead), true)[0];
+    if (!hit) return null;
+    let g = hit.object; while (g.parent && !g.userData.ev) g = g.parent;
+    return { g, part: hit.object.userData.part, at: hit.point };
+  }
+  function screen(v) { const p = v.clone().project(cam); return [(p.x + 1) / 2 * 100, (1 - p.y) / 2 * 100]; }
+  let raf = 0;
+  function frame() {
+    raf = requestAnimationFrame(frame);
+    const w = cv.clientWidth, h = cv.clientHeight;
+    if (cv.width !== Math.round(w * r.getPixelRatio()) || cv.height !== Math.round(h * r.getPixelRatio())) { r.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); }
+    cam.rotation.set(look.pitch, look.yaw, 0);
+    const now = performance.now();
+    for (const g of bots) {
+      const { ev, born, dead, how } = g.userData, age = (now - born) / 1000;
+      g.position.x = ev.x + Math.sin(age * ev.sp * Math.PI) * ev.amp;
+      if (!dead) { g.scale.setScalar(Math.min(1, age / .12)); continue; }
+      const k = (now - dead) / 260;
+      if (how === "fall") { g.rotation.x = -Math.min(1, k) * Math.PI / 2; g.position.y = -Math.max(0, k - 1) * .8; }
+      else g.scale.setScalar(Math.max(.01, 1 - k));
+      if (k > 2) { scene.remove(g); bots.delete(g); }
+    }
+    r.render(scene, cam);
+  }
+  frame();
+  return { look, spawn, kill, shoot, screen, dispose() { cancelAnimationFrame(raf); r.dispose(); r.forceContextLoss(); } };
+}
+function startGame() {
+  if (game && !game.finished) return toast("Já tem uma partida rolando.");
+  const m = { t: "game", r: rand(6), seed: crypto.getRandomValues(new Uint32Array(1))[0] };
+  broadcast(m); playGame(m, "me");
+}
+function onGame(m, from) {
+  if (game && !game.finished) return;
+  playGame(m, from);
+  toast(`${nameOf(from)} chamou uma partida de Mira da Tropa.`);
+}
+async function playGame(m, from) {
+  closeGame();
+  const g = game = { r: m.r, score: 0, shots: 0, hits: 0, heads: 0, done: false, finished: false, timers: [], players: new Map([["me", { s: 0, done: false }]]) };
+  names.forEach((_, id) => g.players.set(id, { s: 0, done: false }));
+  const later = (fn, ms) => g.timers.push(setTimeout(fn, ms));
+  $("game").classList.remove("hidden"); $("gAgain").classList.add("hidden"); $("gTime").textContent = "";
+  $("gMsg").textContent = `${from === "me" ? "Você" : nameOf(from)} chamou a partida. Cabeça vale 3, corpo 1. Não atira no tigrinho.`;
+  paintBoard();
+  try { await loadThree(); } catch { $("gMsg").textContent = "Não deu para carregar o 3D. Confere a internet e tenta de novo."; g.done = true; sendScore(); return; }
+  if (game !== g) return;
+  // A disposed renderer loses its WebGL context for good, so every round gets a new canvas.
+  const cv = Object.assign(document.createElement("canvas"), { id: "gCanvas" }); $("gCanvas").replaceWith(cv);
+  const range = g.range = buildRange(cv), box = $("range");
+  const fx = (text, cls, x, y) => {
+    const el = Object.assign(document.createElement("span"), { className: "pow " + cls, textContent: text });
+    el.style.left = x + "%"; el.style.top = y + "%"; $("gFx").appendChild(el); setTimeout(() => el.remove(), 700);
+  };
+  const locked = () => document.pointerLockElement === box;
+  box.onpointerdown = e => {
+    e.preventDefault();
+    if (e.pointerType === "mouse" && !locked()) box.requestPointerLock?.({ unadjustedMovement: true })?.catch?.(() => box.requestPointerLock());
+    if (!g.playing) return;
+    const rc = box.getBoundingClientRect();
+    const nx = locked() ? 0 : (e.clientX - rc.left) / rc.width * 2 - 1, ny = locked() ? 0 : -((e.clientY - rc.top) / rc.height * 2 - 1);
+    g.shots++; sfx("shot");
+    const hit = range.shoot(nx, ny);
+    if (!hit) return;
+    const pts = PTS[hit.part]; g.score += pts; g.hits += pts > 0; g.heads += hit.part === "head";
+    range.kill(hit.g, hit.part === "tigre" ? "shrink" : "fall");
+    const [x, y] = range.screen(hit.at);
+    if (hit.part === "head") { fx("Headshot +3", "head", x, y); sfx("coins"); }
+    else if (hit.part === "body") { fx("+1", "", x, y); sfx("punch"); }
+    else { fx("−3 o tigrinho cobrou", "bad", x, y); sfx("buzz"); box.classList.remove("cobra"); void box.offsetWidth; box.classList.add("cobra"); }
+    sendScore();
+  };
+  g.onMove = e => {
+    if (!locked()) return;
+    const k = .0022 * +$("gSens").value;
+    range.look.yaw = Math.max(-1.1, Math.min(1.1, range.look.yaw - e.movementX * k));
+    range.look.pitch = Math.max(-.55, Math.min(.6, range.look.pitch - e.movementY * k));
+  };
+  document.addEventListener("mousemove", g.onMove);
+  [3, 2, 1].forEach((n, i) => later(() => { $("gTime").textContent = n; sfx("tick"); }, i * 1000));
+  later(() => {
+    sfx("tickhi"); g.playing = true;
+    const t0 = performance.now();
+    gameSchedule(m.seed).forEach(ev => later(() => { const bot = range.spawn(ev); later(() => range.kill(bot, "shrink"), ev.life); }, ev.at));
+    g.timers.push(setInterval(() => { $("gTime").textContent = Math.ceil(Math.max(0, GAME_MS - (performance.now() - t0)) / 1000) + "s"; }, 200));
+    later(endGame, GAME_MS);
+  }, 3000);
+  function endGame() {
+    g.done = true; g.playing = false; g.timers.forEach(clearTimeout); g.timers = [];
+    $("gTime").textContent = "0s";
+    if (locked()) document.exitPointerLock();
+    const best = Math.max(g.score, +store.get("telao-mira-best") || 0);
+    store.set("telao-mira-best", best);
+    const acc = g.shots ? Math.round(g.hits / g.shots * 100) : 0;
+    $("gMsg").textContent = `Você fez ${g.score}: ${g.heads} headshots, ${acc}% de precisão. Recorde: ${best}. Esperando a tropa…`;
+    sendScore();
+    g.timers.push(setTimeout(finishGame, 4000));
+  }
+}
+document.addEventListener("pointerlockchange", () => {
+  const on = document.pointerLockElement === $("range");
+  $("range").classList.toggle("locked", on);
+  if (!on) unlockedAt = Date.now();
+});
+function sendScore() {
+  if (!game) return;
+  game.players.set("me", { s: game.score, done: game.done });
+  broadcast({ t: "gscore", r: game.r, s: game.score, done: game.done });
+  paintBoard(); maybeFinish();
+}
+function onScore(m, from) {
+  if (!game || m.r !== game.r) return;
+  game.players.set(from, { s: +m.s || 0, done: !!m.done });
+  paintBoard(); maybeFinish();
+}
+function maybeFinish() { if (game?.done && [...game.players.values()].every(p => p.done)) finishGame(); }
+function finishGame() {
+  if (!game || game.finished) return;
+  game.finished = true; game.timers.forEach(clearTimeout);
+  const [[id, p]] = [...game.players].filter(([, p]) => p.done).sort((a, b) => b[1].s - a[1].s);
+  const who = id === "me" ? "Você" : nameOf(id);
+  $("gMsg").textContent += ` ${who} ganhou com ${p.s} ${Math.abs(p.s) === 1 ? "ponto" : "pontos"}.`;
+  $("gMsg").textContent = $("gMsg").textContent.replace(" Esperando a tropa…", "");
+  $("gAgain").classList.remove("hidden");
+  if (id === "me") sfx("coins");
+}
+function paintBoard() {
+  const rows = [...game.players].sort((a, b) => b[1].s - a[1].s);
+  $("gBoard").replaceChildren(...rows.map(([id, p]) => {
+    const li = document.createElement("li"); li.className = id === "me" ? "me" : "";
+    li.append(Object.assign(document.createElement("span"), { textContent: (id === "me" ? `${myName} (você)` : nameOf(id)) + (p.done ? " ✓" : "") }),
+      Object.assign(document.createElement("b"), { textContent: p.s }));
+    return li;
+  }));
+}
+// Leaving mid-round counts as done with the score so far, so nobody waits on you.
+function closeGame() {
+  if (!game) return;
+  game.timers.forEach(clearTimeout);
+  if (!game.done) { game.done = true; sendScore(); }
+  game.range?.dispose();
+  if (game.onMove) document.removeEventListener("mousemove", game.onMove);
+  if (document.pointerLockElement) document.exitPointerLock();
+  $("range").onpointerdown = null; $("gFx").replaceChildren();
+  game = null;
+  $("game").classList.add("hidden");
+}
+$("gamePlay").onclick = $("emptyPlay").onclick = $("gAgain").onclick = startGame;
+$("gClose").onclick = closeGame;
 
 /* ---------- tiles ---------- */
 function addTile(id, stream) {
