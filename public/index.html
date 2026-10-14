@@ -103,50 +103,58 @@ input[type=range]{accent-color:var(--papel);min-width:0}
 #empty button{margin-top:16px;box-shadow:4px 4px 0 var(--rosa)}
 .gamebtn{width:calc(100% - 8px);margin:0 4px;display:flex;justify-content:space-between;align-items:center;font:900 20px/1 var(--poster);text-transform:uppercase;box-shadow:4px 4px 0 var(--rosa)}
 .gamebtn kbd{font:700 11px/1 Archivo,sans-serif;opacity:.6}
-/* Mira da Tropa: a yellow poster card laid over the screens, holding a 3D range */
-#grid{position:relative}
-#game{position:absolute;z-index:6;left:50%;top:50%;translate:-50% -50%;width:min(1000px,calc(100% - 24px));max-height:calc(100% - 20px);overflow:auto;
-  background:var(--papel);color:var(--tinta);border-radius:10px;padding:12px 16px 16px;box-shadow:8px 8px 0 var(--rosa);display:grid;gap:10px}
-.ghead{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.ghead strong{font:900 38px/1 var(--poster);text-transform:uppercase;margin-right:auto}
-.sens{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700}
-.sens input{width:90px;accent-color:var(--tinta)}
-#gTime{font:900 38px/1 var(--poster);font-variant-numeric:tabular-nums;min-width:2.2ch;text-align:right}
-#gClose{background:var(--tinta);color:var(--giz)}
-.gbody{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:16px;align-items:start}
-#range{position:relative;aspect-ratio:16/9;max-height:62vh;border-radius:6px;overflow:hidden;background:var(--noite);cursor:crosshair;touch-action:none;user-select:none}
+/* Mira da Tropa: a floating window styled after Valorant's HUD (ink, off-white, red) */
+#game{--v-ink:#0f1923;--v-off:#ece8e1;--v-red:#ff4655;--v-line:rgba(236,232,225,.16);
+  position:fixed;z-index:20;right:20px;bottom:20px;width:min(780px,calc(100vw - 32px));height:min(480px,calc(100vh - 32px));min-width:380px;min-height:260px;
+  max-width:calc(100vw - 8px);max-height:calc(100vh - 8px);resize:both;overflow:hidden;display:flex;flex-direction:column;
+  background:var(--v-ink);color:var(--v-off);border:1px solid var(--v-line);border-radius:3px;box-shadow:0 22px 60px rgba(0,0,0,.6)}
+#gBar{display:flex;align-items:center;gap:4px;height:38px;padding:0 4px 0 12px;flex:none;cursor:move;user-select:none;touch-action:none;
+  border-bottom:2px solid var(--v-red);background:linear-gradient(90deg,rgba(255,70,85,.18),transparent 40%)}
+#gBar strong{font:900 21px/1 var(--poster);text-transform:uppercase;letter-spacing:.05em;margin-right:auto}
+#gTime{font:800 20px/1 var(--poster);font-variant-numeric:tabular-nums;min-width:3ch;text-align:center;margin-right:6px}
+.gbtn{background:transparent;color:var(--v-off);padding:6px 9px;border-radius:2px;font-size:15px;line-height:1;font-weight:700}
+.gbtn:hover,.gbtn[aria-pressed=true]{background:rgba(236,232,225,.12)}
+#gClose:hover{background:var(--v-red)}
+#range{position:relative;flex:1;min-height:0;overflow:hidden;background:#a8c3d8;cursor:crosshair;touch-action:none;user-select:none}
 #range.locked{cursor:none}
-#gCanvas{display:block;width:100%;height:100%}
-#cross{position:absolute;left:50%;top:50%;width:20px;height:20px;translate:-50% -50%;pointer-events:none;display:none;
-  background:linear-gradient(var(--ciano),var(--ciano)) center/2px 100% no-repeat,linear-gradient(var(--ciano),var(--ciano)) center/100% 2px no-repeat}
-#range.locked #cross{display:block}
-#cross{--c:var(--cross,#fff);background:linear-gradient(var(--c),var(--c)) center/2px 100% no-repeat,linear-gradient(var(--c),var(--c)) center/100% 2px no-repeat;
-  filter:drop-shadow(0 0 1px #000)}
-.gset{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:13px;font-weight:700}
-.gset label{display:flex;align-items:center;gap:6px}
-.gset input,.gset select{font:inherit;font-weight:700;color:var(--giz);background:var(--tinta);border:0;border-radius:5px;padding:5px 7px}
-.gset input{width:72px}
-#gEdpi{color:var(--tinta);opacity:.75;font-weight:500}
-#ammo{position:absolute;right:14px;bottom:10px;display:flex;align-items:baseline;gap:6px;color:#fff;text-shadow:0 1px 3px #000;pointer-events:none}
-#ammo b{font:900 36px/1 var(--poster)}
-#ammo span{font-weight:700;opacity:.7}
-#ammo em{position:absolute;right:0;bottom:44px;font:900 18px/1 var(--poster);text-transform:uppercase;font-style:normal;color:var(--papel);white-space:nowrap}
-#range.locked #lockHint{display:none}
-#lockHint{position:absolute;left:0;right:0;top:10px;text-align:center;color:var(--giz);font-weight:700;pointer-events:none;text-shadow:0 1px 3px #000}
-#gFx{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+#gCanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 #range.cobra{animation:shake .35s}
-.pow{position:absolute;translate:-50% -50%;font:900 30px/1 var(--poster);text-transform:uppercase;white-space:nowrap;color:var(--papel);text-shadow:2px 2px 0 var(--rosa);animation:pow .7s ease-out forwards}
-.pow.head{font-size:40px;color:#fff;text-shadow:2px 2px 0 var(--rosa),-2px -2px 0 var(--ciano)}
-.pow.bad{color:#ff2a2a;text-shadow:2px 2px 0 var(--tinta)}
-@keyframes pow{to{transform:translateY(-60px) scale(1.25);opacity:0}}
-#gBoard{list-style:none;padding:0;display:grid;gap:5px}
-#gBoard li{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--tinta);color:var(--giz);border-radius:6px;padding:6px 10px;font-weight:700}
-#gBoard li.me{box-shadow:inset 0 0 0 2px var(--rosa)}
-#gBoard span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#gBoard b{font:900 24px/1 var(--poster)}
-#gMsg{font-weight:500;margin-top:10px}
-#gAgain{margin-top:10px;width:100%;background:var(--tinta);color:var(--papel)}
-@media (max-width:700px){.gbody{grid-template-columns:1fr}}
+#cross{--c:var(--cross,#3fd0ff);position:absolute;left:50%;top:50%;width:18px;height:18px;translate:-50% -50%;pointer-events:none;
+  background:linear-gradient(var(--c),var(--c)) center/2px 100% no-repeat,linear-gradient(var(--c),var(--c)) center/100% 2px no-repeat;filter:drop-shadow(0 0 1px #000)}
+#gFx{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.pow{position:absolute;translate:-50% -50%;font:800 26px/1 var(--poster);text-transform:uppercase;white-space:nowrap;color:var(--v-off);text-shadow:0 2px 6px rgba(0,0,0,.6);animation:pow .7s ease-out forwards}
+.pow.head{font-size:34px;color:var(--v-red)}
+.pow.bad{color:#ffd400}
+@keyframes pow{to{transform:translateY(-50px);opacity:0}}
+#gBoard{position:absolute;left:10px;top:10px;margin:0;padding:0;list-style:none;display:grid;gap:2px;min-width:180px;pointer-events:none}
+#gBoard li{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:4px 10px;background:rgba(15,25,35,.74);font-size:13px;font-weight:700;border-left:3px solid transparent}
+#gBoard li.me{border-left-color:var(--v-red)}
+#gBoard span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:16ch}
+#gBoard b{font:800 18px/1 var(--poster)}
+#feed{position:absolute;right:10px;top:10px;display:grid;gap:2px;justify-items:end;pointer-events:none}
+#feed span{padding:4px 10px;background:rgba(15,25,35,.74);font:800 15px/1.1 var(--poster);text-transform:uppercase;letter-spacing:.05em;animation:feed 2.2s forwards}
+#feed .head{color:var(--v-red)}
+#feed .bad{color:#ffd400}
+@keyframes feed{0%{opacity:0;translate:14px 0}8%,78%{opacity:1;translate:0}100%{opacity:0}}
+#ammo{position:absolute;right:16px;bottom:12px;display:flex;align-items:baseline;gap:6px;pointer-events:none;text-shadow:0 2px 6px rgba(0,0,0,.6)}
+#ammo b{font:800 40px/1 var(--poster)}
+#ammo span{font:800 18px/1 var(--poster);opacity:.6}
+#ammo em{position:absolute;right:0;bottom:46px;font:800 16px/1 var(--poster);text-transform:uppercase;letter-spacing:.06em;font-style:normal;color:var(--v-red);white-space:nowrap}
+#gCount{position:absolute;inset:0;display:grid;place-items:center;font:900 132px/1 var(--poster);text-shadow:0 6px 30px rgba(0,0,0,.45);pointer-events:none}
+#lockHint{position:absolute;left:50%;bottom:16px;translate:-50% 0;max-width:calc(100% - 140px);background:rgba(15,25,35,.82);padding:7px 12px;font-size:13px;font-weight:700;text-align:center;pointer-events:none}
+#range.locked #lockHint{display:none}
+#gEnd{position:absolute;inset:0;z-index:2;display:grid;place-content:center;justify-items:center;gap:12px;padding:20px;text-align:center;background:rgba(15,25,35,.8)}
+#gWin{font:900 clamp(36px,7vw,64px)/.95 var(--poster);text-transform:uppercase;color:var(--v-red);max-width:14ch}
+#gMsg{max-width:44ch;font-weight:700}
+.vbtn{background:var(--v-red);color:#fff;font:800 18px/1 var(--poster);text-transform:uppercase;letter-spacing:.08em;padding:13px 28px;border-radius:2px}
+.vbtn:hover{background:#ff5f6c}
+#gSet{position:absolute;right:10px;top:10px;z-index:3;display:grid;gap:10px;width:240px;padding:14px;background:rgba(15,25,35,.95);border-top:2px solid var(--v-red)}
+#gSet label{display:grid;gap:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(236,232,225,.7)}
+#gSet input,#gSet select{font:600 14px/1.2 Archivo,sans-serif;color:var(--v-off);background:#1f2b36;border:1px solid var(--v-line);border-radius:2px;padding:7px 8px}
+#gEdpi{font-size:12px;color:rgba(236,232,225,.7)}
+#game.pip{position:static;width:100vw;height:100vh;max-width:none;max-height:none;resize:none;border:0;border-radius:0;box-shadow:none}
+#game.pip #gBar{cursor:default}
+@media (max-width:700px){#game{left:8px!important;right:8px;top:auto!important;bottom:8px;width:auto;height:min(70vh,440px);min-width:0;resize:none}#gBar{cursor:default}}
 
 #side{background:var(--noite);border-left:2px solid var(--noite2);overflow:auto;padding:16px 12px}
 #side h2{font:900 26px/1 var(--poster);text-transform:uppercase;color:var(--papel);padding:0 6px}
@@ -349,22 +357,7 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
     </div>
     <button id="theater" class="quiet" aria-pressed="false" title="Atalho: T. Esc sai.">Modo teatro</button>
   </div>
-  <div id="grid"><p id="empty"><strong>Telão apagado</strong><span>Ninguém está mostrando a tela. Clique em “Mostrar minha tela” para começar.</span><button id="emptyPlay" class="yes">Treinar mira enquanto isso</button></p>
-    <div id="game" class="hidden" role="dialog" aria-label="Mira da Tropa">
-      <div class="ghead"><strong>Mira da Tropa</strong><span id="gTime"></span><button class="ib" id="gClose" title="Sair do jogo (Esc)">✕</button></div>
-      <div class="gset">
-        <label>DPI <input type="number" id="gDpi" min="100" max="32000" step="50" inputmode="numeric"></label>
-        <label>Sensibilidade do Valorant <input type="number" id="gSens" min="0.01" max="10" step="0.01" inputmode="decimal"></label>
-        <span id="gEdpi"></span>
-        <label>Skin <select id="gSkin"></select></label>
-        <label>Mira <select id="gCross"><option value="#ffffff">Branca</option><option value="#3fd0ff">Ciano</option><option value="#7dff5a">Verde</option><option value="#ffe600">Amarela</option><option value="#ff3fa4">Rosa</option></select></label>
-      </div>
-      <div class="gbody">
-        <div id="range"><canvas id="gCanvas"></canvas><div id="cross"></div><div id="gFx"></div><div id="ammo"><b id="ammoN">25</b><span>/ ∞</span><em id="reloading" class="hidden">Recarregando</em></div><p id="lockHint">Clique no mapa para travar a mira. R recarrega, Esc solta o mouse.</p></div>
-        <div><ol id="gBoard"></ol><p id="gMsg"></p><button id="gAgain" class="yes hidden">Jogar de novo</button></div>
-      </div>
-    </div>
-  </div>
+  <div id="grid"><p id="empty"><strong>Telão apagado</strong><span>Ninguém está mostrando a tela. Clique em “Mostrar minha tela” para começar.</span><button id="emptyPlay" class="yes">Treinar mira enquanto isso</button></p></div>
   <aside id="side">
     <h2>Na sala</h2><div id="count"></div><div id="members"></div>
     <section class="board">
@@ -399,6 +392,33 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
       </form>
     </section>
   </aside>
+  <section id="game" class="hidden" aria-label="Mira da Tropa">
+    <header id="gBar">
+      <strong>Mira da Tropa</strong>
+      <span id="gTime"></span>
+      <button class="gbtn" id="gGear" aria-pressed="false" title="Configurações">⚙</button>
+      <button class="gbtn hidden" id="gPop" title="Abrir numa janela que fica por cima de tudo">⧉</button>
+      <button class="gbtn" id="gClose" title="Sair do jogo (Esc)">✕</button>
+    </header>
+    <div id="range">
+      <canvas id="gCanvas"></canvas>
+      <div id="cross"></div>
+      <div id="gFx"></div>
+      <ol id="gBoard"></ol>
+      <div id="feed"></div>
+      <div id="ammo"><b id="ammoN">25</b><span>/ ∞</span><em id="reloading" class="hidden">Recarregando</em></div>
+      <div id="gCount" class="hidden"></div>
+      <p id="lockHint">Clique para travar a mira. WASD anda, Shift caminha, espaço pula, R recarrega, Esc solta o mouse.</p>
+      <div id="gEnd" class="hidden"><h3 id="gWin"></h3><p id="gMsg"></p><button id="gAgain" class="vbtn hidden">Jogar de novo</button></div>
+      <form id="gSet" class="hidden" onsubmit="return false">
+        <label>DPI do mouse<input type="number" id="gDpi" min="100" max="32000" step="50" inputmode="numeric"></label>
+        <label>Sensibilidade do Valorant<input type="number" id="gSens" min="0.01" max="10" step="0.01" inputmode="decimal"></label>
+        <span id="gEdpi"></span>
+        <label>Skin<select id="gSkin"></select></label>
+        <label>Cor da mira<select id="gCross"><option value="#ffffff">Branca</option><option value="#3fd0ff">Ciano</option><option value="#7dff5a">Verde</option><option value="#ffe600">Amarela</option><option value="#ff3fa4">Rosa</option></select></label>
+      </form>
+    </div>
+  </section>
   <div id="toasts" aria-live="polite"></div>
   <div id="comboFx" aria-hidden="true"></div>
   <canvas id="haze" aria-hidden="true"></canvas>
@@ -411,7 +431,9 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
-const $ = id => document.getElementById(id);
+// The game window can move into a Picture-in-Picture document; look there too.
+let pipWin = null;
+const $ = id => document.getElementById(id) || pipWin?.document.getElementById(id);
 const ALPHA = "abcdefghjkmnpqrstuvwxyz23456789";
 const PREFIX = "telao-", MAX = 4;
 const rand = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => ALPHA[b % ALPHA.length]).join("");
@@ -551,17 +573,20 @@ function start(code) {
     try { stream = await navigator.mediaDevices.getDisplayMedia({
       video: { frameRate: { ideal: 30 } },
       audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, suppressLocalAudioPlayback: false },
-      // System audio would carry the Discord call. Only a browser tab's own audio may go out.
+      // System audio would carry the Discord call. A tab's audio, or a program window's own
+      // audio where Chrome can capture it, may go out; never the whole PC's.
       systemAudio: "exclude",
+      windowAudio: "window",
       selfBrowserSurface: "exclude",
     }); }
     catch { hubConn?.send({ t: "stop" }); return; }
     const t = stream.getVideoTracks()[0];
-    const tabAudio = t.getSettings().displaySurface === "browser";
-    if (!tabAudio) stream.getAudioTracks().forEach(a => { a.stop(); stream.removeTrack(a); });
-    note(stream.getAudioTracks().length ? "Mandando a tela com o som desta aba."
-      : tabAudio ? "Sem som: marque “Compartilhar áudio da guia” no seletor."
-      : "Sem som: tela e janela vão mudas para o Discord não vazar. Para ter som, compartilhe uma aba.");
+    const surface = t.getSettings().displaySurface;
+    if (surface === "monitor") stream.getAudioTracks().forEach(a => { a.stop(); stream.removeTrack(a); });
+    note(stream.getAudioTracks().length ? (surface === "window" ? "Mandando a janela com o som dela." : "Mandando a tela com o som desta aba.")
+      : surface === "browser" ? "Sem som: marque “Compartilhar áudio da guia” no seletor."
+      : surface === "window" ? "Sem som: este Chrome ainda não captura o som de um programa. Atualize o Chrome ou compartilhe uma aba."
+      : "Sem som: a tela inteira vai muda para o Discord não vazar. Compartilhe a janela do jogo ou uma aba.");
     t.contentHint = "detail"; t.onended = stop;
     $("share").classList.add("hidden"); $("stop").classList.remove("hidden");
     addTile("me", stream);
@@ -1465,7 +1490,7 @@ addEventListener("keydown", e => {
   const k = e.key.toLowerCase();
   if (k === "escape") { if (!$("trollPop").classList.contains("hidden")) closeTroll(); else if (game && Date.now() - unlockedAt > 400) closeGame(); else if (armed) arm(null); else if (view.theater && !document.fullscreenElement) theater(false); return; }
   if (e.target.matches?.("input[type=range]")) return;
-  if (game && !game.finished && k !== "j") return;
+  if (game) return;
   if (KEYS.includes(k)) hoverMeme ? bindKey(k, hoverMeme) : bound[k] && fireMeme(bound[k]);
   else if (k >= "1" && k <= "5" && k.length === 1) react(REACTS[+k - 1]);
   else if (k === "z" || k === "x" || k === "c") arm(ITEMS["zxc".indexOf(k)]);
@@ -1478,18 +1503,20 @@ addEventListener("keydown", e => {
 });
 
 /* ---------- joguinho: Mira da Tropa ---------- */
-// A Valorant-style aim range in Three.js. Everyone plays the same seeded 30 seconds of
-// bots on their own screen and the scores travel live, so no one referees who hit first.
-const GAME_MS = 30000, PTS = { head: 3, body: 1, tigre: -3 };
+// A Valorant-style aim range in Three.js, in a floating window. Everyone plays the same
+// seeded 30 seconds of bots on their own screen and the scores travel live, so no one
+// referees who hit first. Time is driven by the render loop of whichever window shows the
+// game, so a pop-out window keeps running while the main tab sits in the background.
+const GAME_MS = 30000, PTS = { head: 3, body: 1, tigre: -3 }, MAG = 25, RELOAD_MS = 2500, FIRE_MS = 103;
+const AK_URL = "models/ak47.glb";
 let game = null, unlockedAt = 0, threeP = null;
-const loadThree = () => threeP ??= new Promise((ok, no) => {
-  if (window.THREE) return ok();
-  const sc = Object.assign(document.createElement("script"), { src: "https://unpkg.com/three@0.149.0/build/three.min.js", onload: ok });
-  sc.onerror = () => { threeP = null; no(); };
-  document.head.appendChild(sc);
-});
-// Valorant turns 0.07 degrees per mouse count times the in-game sensitivity. With raw
-// mouse input the counts here are the same, so the same sens and DPI feel the same.
+const loadScript = src => new Promise((ok, no) => document.head.appendChild(Object.assign(document.createElement("script"), { src, onload: ok, onerror: no })));
+// r147 is the last release that still ships the GLTF loader as a plain script.
+const loadThree = () => threeP ??= (window.THREE ? Promise.resolve() : loadScript("https://unpkg.com/three@0.147.0/build/three.min.js"))
+  .catch(e => { threeP = null; throw e; });
+const loadGltf = () => THREE.GLTFLoader ? Promise.resolve() : loadScript("https://unpkg.com/three@0.147.0/examples/js/loaders/GLTFLoader.js");
+// Skins recolor the built-in rifle. A real AK-47 model shows up as one more skin when
+// public/models/ak47.glb exists.
 const SKINS = {
   padrao: ["Padrão", 0x3a3a44, 0x1f1f26, 0x9a9aa8],
   prime: ["Prime", 0xf2efe6, 0xd4a83a, 0x5ad1ff],
@@ -1499,17 +1526,20 @@ const SKINS = {
   elderflame: ["Elderflame", 0x3a2216, 0xff7a1a, 0xffb800],
   tigrinho: ["Tigrinho", 0xffd400, 0xff7a1a, 0xfff3a0],
 };
-const MAG = 25, RELOAD_MS = 2500;
 $("gSkin").append(...Object.entries(SKINS).map(([k, [label]]) => new Option(label, k)));
 const gameSettings = { gDpi: ["telao-dpi", "800"], gSens: ["telao-vsens", "0.4"], gSkin: ["telao-skin", "prime"], gCross: ["telao-cross", "#3fd0ff"] };
-for (const [id, [key, def]] of Object.entries(gameSettings)) {
-  $(id).value = store.get(key) || def;
-  if (!$(id).value) $(id).value = def;
-  $(id).oninput = () => { store.set(key, $(id).value); paintSettings(); };
+const loadSetting = id => { const [key, def] = gameSettings[id]; $(id).value = store.get(key) || def; if (!$(id).value) $(id).value = def; };
+for (const id of Object.keys(gameSettings)) {
+  loadSetting(id);
+  $(id).oninput = () => { store.set(gameSettings[id][0], $(id).value); paintSettings(); };
 }
+fetch(AK_URL, { method: "HEAD" }).then(r => { if (r.ok) { $("gSkin").prepend(new Option("AK-47", "ak47")); loadSetting("gSkin"); } }).catch(() => {});
+// Valorant turns 0.07 degrees per mouse count times the in-game sensitivity. With raw
+// mouse input the counts here are the same, so the same sens and DPI feel the same.
+const turnPerCount = () => .07 * (+$("gSens").value || .4) * Math.PI / 180;
 function paintSettings() {
   const dpi = +$("gDpi").value || 800, sens = +$("gSens").value || .4;
-  $("gEdpi").textContent = `eDPI ${Math.round(dpi * sens)}, ${(360 / (.07 * sens) / dpi * 2.54).toFixed(1)} cm por volta`;
+  $("gEdpi").textContent = `eDPI ${Math.round(dpi * sens)}, ${(360 / (.07 * sens) / dpi * 2.54).toFixed(1)} cm para uma volta`;
   $("range").style.setProperty("--cross", $("gCross").value);
   game?.range?.skin($("gSkin").value);
 }
@@ -1519,8 +1549,8 @@ function gameSchedule(seed) {
   for (let at = 300; at < GAME_MS - 700;) {
     const p = at / GAME_MS;
     out.push({
-      at, kind: r() < .15 ? "tigre" : "bot", life: 1700 - 750 * p,
-      x: (r() - .5) * 10, z: -5.5 - r() * 7,
+      at, kind: r() < .15 ? "tigre" : "bot", life: 1800 - 750 * p,
+      x: (r() - .5) * 14, z: -7 - r() * 9,
       // From a third of the round on, some bots strafe like they are dodging.
       amp: p > .33 && r() < .5 ? .8 + r() * 1.4 : 0, sp: .8 + r() * 1.2,
     });
@@ -1531,39 +1561,61 @@ function gameSchedule(seed) {
 function emojiTexture(ch) {
   const c = Object.assign(document.createElement("canvas"), { width: 128, height: 128 }), x = c.getContext("2d");
   x.font = "104px serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(ch, 64, 72);
-  return new THREE.CanvasTexture(c);
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t;
+}
+function concreteTexture() {
+  const c = Object.assign(document.createElement("canvas"), { width: 256, height: 256 }), x = c.getContext("2d");
+  x.fillStyle = "#9aa2a6"; x.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 2600; i++) { x.fillStyle = `rgba(${Math.random() < .5 ? "255,255,255" : "40,48,54"},${Math.random() * .06})`; x.fillRect(Math.random() * 256, Math.random() * 256, 2, 2); }
+  x.strokeStyle = "rgba(55,64,70,.35)"; x.lineWidth = 3; x.strokeRect(0, 0, 256, 256);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(24, 24); t.anisotropy = 8; t.encoding = THREE.sRGBEncoding; return t;
 }
 function buildRange(cv) {
   const T = THREE, r = new T.WebGLRenderer({ canvas: cv, antialias: true });
+  T.ColorManagement.legacyMode = false;   // hex colors below are sRGB, like CSS
   r.setPixelRatio(Math.min(devicePixelRatio, 2));
-  const scene = new T.Scene(); scene.background = new T.Color(0x120f38); scene.fog = new T.Fog(0x120f38, 16, 34);
-  const cam = new T.PerspectiveCamera(70, 16 / 9, .03, 100); cam.position.set(0, 1.6, 0); cam.rotation.order = "YXZ";
-  scene.add(new T.HemisphereLight(0xece9ff, 0x1b1464, 1.15));
-  const sun = new T.DirectionalLight(0xffffff, .75); sun.position.set(4, 9, 5); scene.add(sun);
-  const lambert = c => new T.MeshLambertMaterial({ color: c });
-  const floor = new T.Mesh(new T.PlaneGeometry(60, 60), lambert(0x1d1a52)); floor.rotation.x = -Math.PI / 2; scene.add(floor);
-  const lines = new T.GridHelper(60, 30, 0xff3fa4, 0x34308a); lines.position.y = .01; scene.add(lines);
-  const wall = new T.Mesh(new T.BoxGeometry(44, 7, .5), lambert(0xffe600)); wall.position.set(0, 3.5, -22); scene.add(wall);
-  for (let i = -3; i <= 3; i++) { const st = new T.Mesh(new T.BoxGeometry(2.2, 7.02, .52), lambert(0xff3fa4)); st.position.set(i * 6.3, 3.5, -22); scene.add(st); }
-  [[-5, -5.5], [4.2, -6.5], [-1.2, -12], [6.5, -13], [-7, -15]].forEach(([x, z]) => {
-    const box = new T.Mesh(new T.BoxGeometry(1.4, 1.1, 1.4), lambert(0x2c2878)); box.position.set(x, .55, z); scene.add(box);
+  r.outputEncoding = T.sRGBEncoding; r.toneMapping = T.ACESFilmicToneMapping; r.toneMappingExposure = .9;
+  r.shadowMap.enabled = true; r.shadowMap.type = T.PCFSoftShadowMap;
+  const SKY = 0xa8c3d8, scene = new T.Scene();
+  scene.background = new T.Color(SKY); scene.fog = new T.Fog(SKY, 26, 70);
+  const cam = new T.PerspectiveCamera(70, 16 / 9, .03, 140); cam.rotation.order = "YXZ";
+  scene.add(new T.HemisphereLight(0xeaf4ff, 0x5b646b, .95));
+  const sun = new T.DirectionalLight(0xfff0d8, 1.7); sun.position.set(-9, 16, 7); sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -22, right: 22, top: 22, bottom: -22, near: 1, far: 60 }); sun.shadow.bias = -.0004;
+  scene.add(sun);
+  const std = (color, o = {}) => new T.MeshStandardMaterial({ color, roughness: .82, metalness: 0, ...o });
+  const add = (geo, mat, x, y, z, cast = true) => { const m = new T.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = cast; m.receiveShadow = true; scene.add(m); return m; };
+  const floor = add(new T.PlaneGeometry(90, 90), std(0xb4bbbf, { map: concreteTexture() }), 0, 0, -10, false); floor.rotation.x = -Math.PI / 2;
+  const wall = std(0x33424d), trim = std(0xe3ded5), red = std(0xff4655, { emissive: 0xff4655, emissiveIntensity: .35 });
+  add(new T.BoxGeometry(44, 9, 1), wall, 0, 4.5, -27);
+  add(new T.BoxGeometry(44, .35, 1.1), red, 0, 1.3, -27);
+  add(new T.BoxGeometry(44, .5, 1.1), trim, 0, 9, -27);
+  for (const x of [-21, 21]) { add(new T.BoxGeometry(1, 9, 40), wall, x, 4.5, -8); add(new T.BoxGeometry(1.1, .35, 40), red, x, 1.3, -8); }
+  add(new T.BoxGeometry(26, .03, .14), red, 0, .015, -5.2, false);           // the line you shoot from
+  for (const x of [-12, -6, 0, 6, 12]) add(new T.BoxGeometry(.08, .02, 16), trim, x, .012, -14, false);
+  [[-7, -8.5, 0], [6, -10, 1], [-2.5, -16, 1], [9, -18, 0], [-10, -20, 1]].forEach(([x, z, light]) => {
+    add(new T.BoxGeometry(1.8, 1.8, 1.8), light ? trim : std(0x4c5b66), x, .9, z);
   });
-  const geo = { body: new T.CapsuleGeometry(.3, .75, 4, 12), head: new T.SphereGeometry(.21, 18, 14) };
-  const mat = { body: lambert(0xff3fa4), head: lambert(0xffe600), tigre: new T.SpriteMaterial({ map: emojiTexture("🐯") }) };
+  const geo = { body: new T.CapsuleGeometry(.27, .7, 6, 14), head: new T.SphereGeometry(.19, 20, 16), core: new T.BoxGeometry(.18, .12, .05), base: new T.CylinderGeometry(.34, .38, .07, 24) };
+  const mat = { body: std(0xc4cbd1, { roughness: .55 }), head: std(0xece8e1, { roughness: .45 }), core: std(0xff4655, { emissive: 0xff4655, emissiveIntensity: 1.4 }),
+    base: std(0x2a343c), hit: std(0xff4655, { emissive: 0xff4655, emissiveIntensity: .8 }), tigre: new T.SpriteMaterial({ map: emojiTexture("🐯") }) };
   const bots = new Set(), ray = new T.Raycaster(), look = { yaw: 0, pitch: 0 };
-  function spawn(ev) {
+  function spawn(ev, born) {
     const g = new T.Group();
-    if (ev.kind === "tigre") { const sp = new T.Sprite(mat.tigre); sp.scale.set(1.4, 1.4, 1); sp.position.y = 1.1; sp.userData.part = "tigre"; g.add(sp); }
+    if (ev.kind === "tigre") { const sp = new T.Sprite(mat.tigre); sp.scale.set(1.5, 1.5, 1); sp.position.y = 1.15; sp.userData.part = "tigre"; g.add(sp); }
     else {
-      const body = new T.Mesh(geo.body, mat.body); body.position.y = .72; body.userData.part = "body";
-      const head = new T.Mesh(geo.head, mat.head); head.position.y = 1.5; head.userData.part = "head";
-      g.add(body, head);
+      const mk = (gm, mm, y, part, z = 0) => { const m = new T.Mesh(gm, mm); m.position.set(0, y, z); m.castShadow = true; m.userData.part = part; g.add(m); return m; };
+      mk(geo.base, mat.base, .035, "body"); mk(geo.body, mat.body, .74, "body"); mk(geo.core, mat.core, 1.0, "body", .26); mk(geo.head, mat.head, 1.5, "head");
     }
     g.position.set(ev.x, 0, ev.z); g.scale.setScalar(.01);
-    g.userData = { ev, born: performance.now(), dead: 0 };
+    g.userData = { ev, born, expire: born + ev.life, dead: 0 };
     scene.add(g); bots.add(g); return g;
   }
-  function kill(g, how) { if (!g.userData.dead) { g.userData.dead = performance.now(); g.userData.how = how; } }
+  function kill(g, how, part) {
+    if (g.userData.dead) return;
+    g.userData.dead = performance.now(); g.userData.how = how;
+    if (part === "head") g.children.forEach(c => { if (c.userData.part === "head") c.material = mat.hit; });
+  }
   function shoot(nx, ny) {
     ray.setFromCamera({ x: nx, y: ny }, cam);
     const hit = ray.intersectObjects([...bots].filter(g => !g.userData.dead), true)[0];
@@ -1571,30 +1623,29 @@ function buildRange(cv) {
     let g = hit.object; while (g.parent && !g.userData.ev) g = g.parent;
     return { g, part: hit.object.userData.part, at: hit.point };
   }
-  function screen(v) { const p = v.clone().project(cam); return [(p.x + 1) / 2 * 100, (1 - p.y) / 2 * 100]; }
+  const screen = v => { const p = v.clone().project(cam); return [(p.x + 1) / 2 * 100, (1 - p.y) / 2 * 100]; };
 
-  // First-person rifle built from boxes, held by the camera. Skins recolor its three materials.
+  /* first-person rifle, held by the camera */
   scene.add(cam);
   const gm = {
     body: new T.MeshStandardMaterial({ roughness: .45, metalness: .5 }),
     accent: new T.MeshStandardMaterial({ roughness: .3, metalness: .75 }),
     glow: new T.MeshStandardMaterial({ emissiveIntensity: 1.8 }),
   };
-  const gun = new T.Group(), HOLD = new T.Vector3(.2, -.19, -.4);
-  const part = (geo, mat, x, y, z, rx = 0) => { const p = new T.Mesh(geo, mat); p.position.set(x, y, z); p.rotation.x = rx; gun.add(p); return p; };
+  const holder = new T.Group(), boxGun = new T.Group(), HOLD = new T.Vector3(.17, -.18, -.4);
+  const part = (g, mm, x, y, z, rx = 0) => { const p = new T.Mesh(g, mm); p.position.set(x, y, z); p.rotation.x = rx; boxGun.add(p); };
   const box3 = (w, h, d) => new T.BoxGeometry(w, h, d);
-  part(box3(.07, .09, .42), gm.body, 0, 0, 0);                   // receiver
-  part(box3(.056, .065, .3), gm.accent, 0, .004, -.34);          // handguard
-  part(new T.CylinderGeometry(.013, .013, .2, 10), gm.body, 0, .012, -.58, Math.PI / 2); // barrel
-  part(box3(.03, .03, .05), gm.accent, 0, .012, -.7);            // muzzle brake
-  part(box3(.055, .13, .065), gm.accent, 0, -.11, -.07, -.28);   // magazine
-  part(box3(.045, .11, .05), gm.body, 0, -.085, .12, .38);       // grip
-  part(box3(.06, .085, .24), gm.accent, 0, -.012, .31);          // stock
-  part(box3(.024, .035, .14), gm.body, 0, .065, -.03);           // sight
-  part(box3(.074, .014, .4), gm.glow, 0, .028, -.02);            // glow line
-  part(box3(.01, .03, .26), gm.glow, .03, -.005, -.34);          // handguard glow
-  gun.position.copy(HOLD); gun.rotation.y = .05;
-  cam.add(gun);
+  part(box3(.07, .09, .42), gm.body, 0, 0, 0);
+  part(box3(.056, .065, .3), gm.accent, 0, .004, -.34);
+  part(new T.CylinderGeometry(.013, .013, .2, 10), gm.body, 0, .012, -.58, Math.PI / 2);
+  part(box3(.03, .03, .05), gm.accent, 0, .012, -.7);
+  part(box3(.055, .13, .065), gm.accent, 0, -.11, -.07, -.28);
+  part(box3(.045, .11, .05), gm.body, 0, -.085, .12, .38);
+  part(box3(.06, .085, .24), gm.accent, 0, -.012, .31);
+  part(box3(.024, .035, .14), gm.body, 0, .065, -.03);
+  part(box3(.074, .014, .4), gm.glow, 0, .028, -.02);
+  part(box3(.01, .03, .26), gm.glow, .03, -.005, -.34);
+  boxGun.scale.setScalar(.8); holder.add(boxGun); holder.position.copy(HOLD); holder.rotation.y = .05; cam.add(holder);
   const flashTex = (() => {
     const c = Object.assign(document.createElement("canvas"), { width: 64, height: 64 }), x = c.getContext("2d");
     const grad = x.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -1602,47 +1653,82 @@ function buildRange(cv) {
     x.fillStyle = grad; x.fillRect(0, 0, 64, 64); return new T.CanvasTexture(c);
   })();
   const flash = new T.Sprite(new T.SpriteMaterial({ map: flashTex, blending: T.AdditiveBlending, depthWrite: false }));
-  flash.position.set(0, .012, -.76); flash.scale.setScalar(.22); flash.visible = false; gun.add(flash);
-  const flashLight = new T.PointLight(0xffb050, 0, 3); flashLight.position.copy(flash.position); gun.add(flashLight);
+  flash.position.set(0, .012, -.76); flash.scale.setScalar(.22); flash.visible = false; holder.add(flash);
+  const flashLight = new T.PointLight(0xffb050, 0, 3); flashLight.position.copy(flash.position); holder.add(flashLight);
+  // The downloaded AK-47 is fitted to the same size and direction as the built-in rifle.
+  let ak = null;
+  function loadAk() {
+    loadGltf().then(() => new T.GLTFLoader().load(AK_URL, gltf => {
+      const m = gltf.scene, size = new T.Box3().setFromObject(m).getSize(new T.Vector3());
+      const long = Math.max(size.x, size.y, size.z);
+      if (size.x === long) m.rotation.y = Math.PI / 2;
+      m.scale.setScalar(.95 / long);
+      const fit = new T.Group(); fit.add(m);
+      const c = new T.Box3().setFromObject(fit).getCenter(new T.Vector3()); m.position.sub(c.multiplyScalar(1 / 1));
+      fit.position.z = -.12;
+      ak = fit; ak.visible = $("gSkin").value === "ak47"; holder.add(ak); boxGun.visible = !ak.visible;
+    }, undefined, () => {})).catch(() => {});
+  }
   function skin(k) {
+    if (k === "ak47") { if (!ak) loadAk(); else { ak.visible = true; boxGun.visible = false; } return; }
+    if (ak) ak.visible = false; boxGun.visible = true;
     const [, body, accent, glow] = SKINS[k] || SKINS.prime;
     gm.body.color.setHex(body); gm.accent.color.setHex(accent); gm.glow.color.setHex(glow); gm.glow.emissive.setHex(glow);
   }
   skin($("gSkin").value);
-  let kick = 0, flashUntil = 0, reloadFrom = 0, last = performance.now();
+
+  /* movement: WASD at Valorant's running speed, Shift to walk, space to jump */
+  const me = { x: 0, z: 0, y: 0, vx: 0, vz: 0, vy: 0, keys: new Set() };
+  const jump = () => { if (me.y === 0) me.vy = 5.2; };
+  const speed = () => Math.hypot(me.vx, me.vz) + (me.y > 0 ? 6 : 0);
+  let kick = 0, flashUntil = 0, reloadFrom = 0, last = performance.now(), bob = 0, raf = 0, rafWin = window;
   function fire() { kick = 1; flashUntil = performance.now() + 45; flash.material.rotation = Math.random() * Math.PI; }
   function reload() { reloadFrom = performance.now(); }
-
-  let raf = 0;
+  const api = { look, me, spawn, kill, shoot, screen, skin, fire, reload, jump, speed, onTick: null,
+    fovY: () => cam.fov * Math.PI / 180, aspect: () => cam.aspect,
+    dispose() { rafWin.cancelAnimationFrame(raf); r.dispose(); r.forceContextLoss(); } };
   function frame() {
-    raf = requestAnimationFrame(frame);
+    rafWin = cv.ownerDocument.defaultView || window;
+    raf = rafWin.requestAnimationFrame(frame);
     const t = performance.now(), dt = Math.min(.05, (t - last) / 1000); last = t;
+    const k = me.keys, f = k.has("w") - k.has("s"), s = k.has("d") - k.has("a");
+    let tx = 0, tz = 0;
+    if (f || s) {
+      const v = (k.has("shift") ? 2.4 : 5.4) / Math.hypot(f, s), sin = Math.sin(look.yaw), cos = Math.cos(look.yaw);
+      tx = (-sin * f + cos * s) * v; tz = (-cos * f - sin * s) * v;
+    }
+    const grip = me.y > 0 ? 2 : 14;
+    me.vx += (tx - me.vx) * Math.min(1, dt * grip); me.vz += (tz - me.vz) * Math.min(1, dt * grip);
+    me.x = Math.max(-19, Math.min(19, me.x + me.vx * dt)); me.z = Math.max(-5, Math.min(10, me.z + me.vz * dt));
+    me.vy -= 17 * dt; me.y = Math.max(0, me.y + me.vy * dt); if (me.y === 0) me.vy = Math.max(0, me.vy);
+    const run = Math.hypot(me.vx, me.vz); bob += dt * run * 2.1;
+    cam.position.set(me.x, 1.6 + me.y + Math.sin(bob * 2) * .025 * Math.min(1, run / 5), me.z);
     kick *= Math.exp(-dt * 16);
     const rl = reloadFrom ? Math.min(1, (t - reloadFrom) / RELOAD_MS) : 1, dip = Math.sin(Math.PI * rl);
     if (rl >= 1) reloadFrom = 0;
-    gun.position.set(HOLD.x, HOLD.y - dip * .22, HOLD.z + kick * .07);
-    gun.rotation.set(kick * .14, .05, dip * .6);
+    holder.position.set(HOLD.x + Math.sin(bob) * .012, HOLD.y - dip * .22 + Math.abs(Math.cos(bob)) * .01, HOLD.z + kick * .07);
+    holder.rotation.set(kick * .14, .05, dip * .6);
     flash.visible = t < flashUntil; flashLight.intensity = flash.visible ? 3 : 0;
     const w = cv.clientWidth, h = cv.clientHeight;
-    if (cv.width !== Math.round(w * r.getPixelRatio()) || cv.height !== Math.round(h * r.getPixelRatio())) {
-      // Valorant's 103 degrees horizontal field of view, whatever the box's shape.
+    if (w && h && (cv.width !== Math.round(w * r.getPixelRatio()) || cv.height !== Math.round(h * r.getPixelRatio()))) {
+      // Valorant's 103 degrees horizontal field of view, whatever the window's shape.
       r.setSize(w, h, false); cam.aspect = w / h; cam.fov = 2 * Math.atan(Math.tan(103 / 2 * Math.PI / 180) / cam.aspect) * 180 / Math.PI; cam.updateProjectionMatrix();
     }
     cam.rotation.set(look.pitch, look.yaw, 0);
-    const now = performance.now();
     for (const g of bots) {
-      const { ev, born, dead, how } = g.userData, age = (now - born) / 1000;
+      const { ev, born, expire, dead, how } = g.userData, age = Math.max(0, t - born) / 1000;
       g.position.x = ev.x + Math.sin(age * ev.sp * Math.PI) * ev.amp;
-      if (!dead) { g.scale.setScalar(Math.min(1, age / .12)); continue; }
-      const k = (now - dead) / 260;
-      if (how === "fall") { g.rotation.x = -Math.min(1, k) * Math.PI / 2; g.position.y = -Math.max(0, k - 1) * .8; }
-      else g.scale.setScalar(Math.max(.01, 1 - k));
-      if (k > 2) { scene.remove(g); bots.delete(g); }
+      if (!dead) { if (t > expire) kill(g, "shrink"); else { g.scale.setScalar(Math.min(1, age / .12)); continue; } }
+      const q = (t - g.userData.dead) / 260;
+      if (g.userData.how === "fall") { g.rotation.x = -Math.min(1, q) * Math.PI / 2; g.position.y = -Math.max(0, q - 1) * .8; }
+      else g.scale.setScalar(Math.max(.01, 1 - q));
+      if (q > 2) { scene.remove(g); bots.delete(g); }
     }
+    api.onTick?.(t);
     r.render(scene, cam);
   }
   frame();
-  return { look, spawn, kill, shoot, screen, skin, fire, reload, dispose() { cancelAnimationFrame(raf); r.dispose(); r.forceContextLoss(); } };
+  return api;
 }
 function startGame() {
   if (away) return toast("Você está no modo ausente.");
@@ -1656,83 +1742,170 @@ function onGame(m, from) {
   playGame(m, from);
   toast(`${nameOf(from)} chamou uma partida de Mira da Tropa.`);
 }
+const show = (id, on) => $(id).classList.toggle("hidden", !on);
 async function playGame(m, from) {
   closeGame();
-  const g = game = { r: m.r, ammo: MAG, reloading: false, score: 0, shots: 0, hits: 0, heads: 0, done: false, finished: false, timers: [], players: new Map([["me", { s: 0, done: false }]]) };
+  const g = game = { r: m.r, ammo: MAG, reloading: false, score: 0, shots: 0, hits: 0, heads: 0, burst: 0, lastShot: 0, firing: false,
+    done: false, finished: false, playing: false, timers: [], players: new Map([["me", { s: 0, done: false }]]) };
   names.forEach((_, id) => awayIds.has(id) || g.players.set(id, { s: 0, done: false }));
-  const later = (fn, ms) => g.timers.push(setTimeout(fn, ms));
-  $("game").classList.remove("hidden"); $("gAgain").classList.add("hidden"); $("gTime").textContent = "";
-  $("gMsg").textContent = `${from === "me" ? "Você" : nameOf(from)} chamou a partida. Cabeça vale 3, corpo 1. Não atira no tigrinho.`;
+  placeGame();
+  show("game", true); show("gEnd", false); show("gAgain", false); show("gSet", false); $("gGear").setAttribute("aria-pressed", false);
+  $("gTime").textContent = ""; $("feed").replaceChildren();
   paintBoard();
-  try { await loadThree(); } catch { $("gMsg").textContent = "Não deu para carregar o 3D. Confere a internet e tenta de novo."; g.done = true; sendScore(); return; }
+  try { await loadThree(); }
+  catch { show("gEnd", true); $("gWin").textContent = "Sem 3D"; $("gMsg").textContent = "Não deu para carregar o 3D. Confere a internet e tenta de novo."; g.finished = g.done = true; sendScore(); return; }
   if (game !== g) return;
   // A disposed renderer loses its WebGL context for good, so every round gets a new canvas.
-  const cv = Object.assign(document.createElement("canvas"), { id: "gCanvas" }); $("gCanvas").replaceWith(cv);
+  const old = $("gCanvas"), cv = old.ownerDocument.createElement("canvas"); cv.id = "gCanvas"; old.replaceWith(cv);
   const range = g.range = buildRange(cv), box = $("range");
+  const sched = gameSchedule(m.seed), playAt = performance.now() + 3000, endAt = playAt + GAME_MS;
+  let next = 0, lastCount = 0, lastSec = 0;
   const fx = (text, cls, x, y) => {
-    const el = Object.assign(document.createElement("span"), { className: "pow " + cls, textContent: text });
+    const el = box.ownerDocument.createElement("span"); el.className = "pow " + cls; el.textContent = text;
     el.style.left = x + "%"; el.style.top = y + "%"; $("gFx").appendChild(el); setTimeout(() => el.remove(), 700);
   };
-  const locked = () => document.pointerLockElement === box;
-  box.onpointerdown = e => {
-    e.preventDefault();
-    if (e.pointerType === "mouse" && !locked()) box.requestPointerLock?.({ unadjustedMovement: true })?.catch?.(() => box.requestPointerLock());
-    if (!g.playing || g.reloading) return;
-    const rc = box.getBoundingClientRect();
-    const nx = locked() ? 0 : (e.clientX - rc.left) / rc.width * 2 - 1, ny = locked() ? 0 : -((e.clientY - rc.top) / rc.height * 2 - 1);
+  const feed = (text, cls) => {
+    const el = box.ownerDocument.createElement("span"); el.className = cls; el.textContent = text;
+    $("feed").prepend(el); [...$("feed").children].slice(5).forEach(c => c.remove()); setTimeout(() => el.remove(), 2200);
+  };
+  const locked = () => box.ownerDocument.pointerLockElement === box;
+  // One bullet. Moving, jumping and spraying open the cone like in Valorant; standing
+  // still the first shots go exactly where the crosshair is.
+  function shot(nx, ny) {
+    const t = performance.now();
+    g.burst = t - g.lastShot < 300 ? g.burst + 1 : 0; g.lastShot = t;
+    const v = range.speed(), cone = (v > 6 ? .12 : v > 3 ? .07 : v > 1 ? .025 : 0) + Math.min(g.burst, 9) * .007;
+    const a = Math.random() * Math.PI * 2, d = Math.random() * cone / (range.fovY() / 2);
     g.shots++; sfx("shot"); range.fire();
     g.ammo--; paintAmmo(); if (!g.ammo) reload();
-    const hit = range.shoot(nx, ny);
+    if (g.burst > 2) range.look.pitch = Math.min(1.4, range.look.pitch + .0035);
+    const hit = range.shoot(nx + Math.cos(a) * d / range.aspect(), ny + Math.sin(a) * d);
     if (!hit) return;
     const pts = PTS[hit.part]; g.score += pts; g.hits += pts > 0; g.heads += hit.part === "head";
-    range.kill(hit.g, hit.part === "tigre" ? "shrink" : "fall");
+    range.kill(hit.g, hit.part === "tigre" ? "shrink" : "fall", hit.part);
     const [x, y] = range.screen(hit.at);
-    if (hit.part === "head") { fx("Headshot +3", "head", x, y); sfx("coins"); }
-    else if (hit.part === "body") { fx("+1", "", x, y); sfx("punch"); }
-    else { fx("−3 o tigrinho cobrou", "bad", x, y); sfx("buzz"); box.classList.remove("cobra"); void box.offsetWidth; box.classList.add("cobra"); }
+    if (hit.part === "head") { fx("+3", "head", x, y); feed("Headshot +3", "head"); sfx("coins"); }
+    else if (hit.part === "body") { fx("+1", "", x, y); feed("Corpo +1", ""); sfx("punch"); }
+    else { fx("−3", "bad", x, y); feed("O tigrinho cobrou −3", "bad"); sfx("buzz"); box.classList.remove("cobra"); void box.offsetWidth; box.classList.add("cobra"); }
     sendScore();
-  };
-  g.onMove = e => {
-    if (!locked()) return;
-    const k = .07 * (+$("gSens").value || .4) * Math.PI / 180;
-    range.look.yaw = Math.max(-1.1, Math.min(1.1, range.look.yaw - e.movementX * k));
-    range.look.pitch = Math.max(-.55, Math.min(.6, range.look.pitch - e.movementY * k));
-  };
-  document.addEventListener("mousemove", g.onMove);
-  function paintAmmo() { $("ammoN").textContent = g.ammo; $("reloading").classList.toggle("hidden", !g.reloading); }
-  function reload() {
-    if (g.reloading || g.ammo === MAG) return;
-    g.reloading = true; range.reload(); paintAmmo();
-    later(() => { g.reloading = false; g.ammo = MAG; paintAmmo(); }, RELOAD_MS);
   }
-  g.onKey = e => { if (e.key.toLowerCase() === "r" && !e.repeat && g.playing) reload(); };
-  document.addEventListener("keydown", g.onKey);
+  const aim = e => {
+    if (locked()) return [0, 0];
+    const rc = box.getBoundingClientRect();
+    return [(e.clientX - rc.left) / rc.width * 2 - 1, -((e.clientY - rc.top) / rc.height * 2 - 1)];
+  };
+  box.onpointerdown = e => {
+    if (e.target.closest("#gSet,#gEnd")) return;
+    e.preventDefault();
+    if (e.pointerType === "mouse" && !locked()) box.requestPointerLock?.({ unadjustedMovement: true })?.catch?.(() => box.requestPointerLock());
+    if (e.button === 2) { g.drag = true; return; }
+    if (!g.playing || g.reloading || e.button !== 0) return;
+    g.firing = locked(); g.nextShot = performance.now() + FIRE_MS;
+    shot(...aim(e));
+  };
+  box.oncontextmenu = e => e.preventDefault();
+  function paintAmmo() { $("ammoN").textContent = g.ammo; show("reloading", g.reloading); }
+  function reload() {
+    if (g.reloading || g.ammo === MAG || !g.playing) return;
+    g.reloading = true; g.firing = false; g.reloadDone = performance.now() + RELOAD_MS; range.reload(); paintAmmo();
+  }
+  g.reload = reload;
   paintAmmo();
-  [3, 2, 1].forEach((n, i) => later(() => { $("gTime").textContent = n; sfx("tick"); }, i * 1000));
-  later(() => {
-    sfx("tickhi"); g.playing = true;
-    const t0 = performance.now();
-    gameSchedule(m.seed).forEach(ev => later(() => { const bot = range.spawn(ev); later(() => range.kill(bot, "shrink"), ev.life); }, ev.at));
-    g.timers.push(setInterval(() => { $("gTime").textContent = Math.ceil(Math.max(0, GAME_MS - (performance.now() - t0)) / 1000) + "s"; }, 200));
-    later(endGame, GAME_MS);
-  }, 3000);
+  range.onTick = t => {
+    if (!g.playing && !g.done) {
+      const n = Math.ceil((playAt - t) / 1000);
+      if (n > 0) { if (n !== lastCount) { lastCount = n; $("gCount").textContent = n; show("gCount", true); sfx("tick"); } return; }
+      g.playing = true; show("gCount", false); sfx("tickhi");
+    }
+    if (!g.playing) return;
+    while (next < sched.length && playAt + sched[next].at <= t) { const ev = sched[next++], born = playAt + ev.at; if (born + ev.life > t) range.spawn(ev, born); }
+    if (g.reloading && t >= g.reloadDone) { g.reloading = false; g.ammo = MAG; paintAmmo(); }
+    // Holding the mouse sprays at a Vandal's fire rate.
+    if (g.firing && !g.reloading && t >= g.nextShot) { g.nextShot = t + FIRE_MS; shot(0, 0); }
+    const sec = Math.ceil(Math.max(0, endAt - t) / 1000);
+    if (sec !== lastSec) { lastSec = sec; $("gTime").textContent = sec + "s"; }
+    if (t >= endAt) endGame();
+  };
   function endGame() {
-    g.done = true; g.playing = false; g.timers.forEach(clearTimeout); g.timers = [];
-    $("gTime").textContent = "0s";
-    if (locked()) document.exitPointerLock();
+    g.done = true; g.playing = false; g.firing = false;
+    if (locked()) box.ownerDocument.exitPointerLock();
     const best = Math.max(g.score, +store.get("telao-mira-best") || 0);
     store.set("telao-mira-best", best);
     const acc = g.shots ? Math.round(g.hits / g.shots * 100) : 0;
+    show("gEnd", true); $("gWin").textContent = "Fim da partida";
     $("gMsg").textContent = `Você fez ${g.score}: ${g.heads} headshots, ${acc}% de precisão. Recorde: ${best}. Esperando a tropa…`;
     sendScore();
     g.timers.push(setTimeout(finishGame, 4000));
   }
 }
-document.addEventListener("pointerlockchange", () => {
-  const on = document.pointerLockElement === $("range");
-  $("range").classList.toggle("locked", on);
-  if (!on) unlockedAt = Date.now();
-});
+// Mouse and keys are listened to on every document the game window can live in.
+function gameInput(doc) {
+  doc.addEventListener("mousemove", e => {
+    const g = game; if (!g?.range) return;
+    if (doc.pointerLockElement !== $("range") && !g.drag) return;
+    const k = turnPerCount();
+    g.range.look.yaw -= e.movementX * k;
+    g.range.look.pitch = Math.max(-1.45, Math.min(1.45, g.range.look.pitch - e.movementY * k));
+  });
+  doc.addEventListener("pointerup", () => { if (game) { game.firing = false; game.drag = false; } });
+  doc.addEventListener("keydown", e => {
+    const g = game; if (!g?.range || e.target.matches?.("input,select") || e.metaKey || e.ctrlKey) return;
+    const k = e.key.toLowerCase();
+    if (["w", "a", "s", "d", "shift"].includes(k)) { g.range.me.keys.add(k); e.preventDefault(); }
+    else if (k === " ") { g.range.jump(); e.preventDefault(); }
+    else if (k === "r" && !e.repeat) g.reload?.();
+  });
+  doc.addEventListener("keyup", e => game?.range?.me.keys.delete(e.key.toLowerCase()));
+  doc.defaultView.addEventListener("blur", () => game?.range?.me.keys.clear());
+  doc.addEventListener("pointerlockchange", () => {
+    const on = doc.pointerLockElement === $("range");
+    $("range").classList.toggle("locked", on);
+    if (!on) { unlockedAt = Date.now(); if (game) game.firing = false; }
+  });
+}
+gameInput(document);
+/* the floating window: drag by the title bar, resize from the corner, or pop out */
+function placeGame() {
+  const el = $("game"); if (el.classList.contains("pip")) return;
+  try {
+    const [x, y] = JSON.parse(store.get("telao-gamepos") || "null") || [];
+    if (x >= 0 && y >= 0 && x < innerWidth - 100 && y < innerHeight - 60) Object.assign(el.style, { left: x + "px", top: y + "px", right: "auto", bottom: "auto" });
+  } catch {}
+}
+$("gBar").onpointerdown = e => {
+  const el = $("game"), bar = $("gBar");
+  if (e.target.closest("button") || el.classList.contains("pip") || innerWidth <= 700) return;
+  const rc = el.getBoundingClientRect(), dx = e.clientX - rc.left, dy = e.clientY - rc.top;
+  bar.setPointerCapture(e.pointerId);
+  bar.onpointermove = ev => {
+    const x = Math.max(0, Math.min(innerWidth - 120, ev.clientX - dx)), y = Math.max(0, Math.min(innerHeight - 40, ev.clientY - dy));
+    Object.assign(el.style, { left: x + "px", top: y + "px", right: "auto", bottom: "auto" });
+  };
+  bar.onpointerup = () => { bar.onpointermove = bar.onpointerup = null; store.set("telao-gamepos", JSON.stringify([el.offsetLeft, el.offsetTop])); };
+};
+$("gGear").onclick = () => {
+  const on = $("gSet").classList.contains("hidden");
+  show("gSet", on); $("gGear").setAttribute("aria-pressed", on);
+  if (on && $("range").ownerDocument.pointerLockElement) $("range").ownerDocument.exitPointerLock();
+};
+// Document Picture-in-Picture gives a real window that stays on top of other apps.
+if ("documentPictureInPicture" in window) show("gPop", true);
+$("gPop").onclick = async () => {
+  if (pipWin) return pipWin.close();
+  const el = $("game");
+  const w = await documentPictureInPicture.requestWindow({ width: el.offsetWidth, height: el.offsetHeight }).catch(() => null);
+  if (!w) return toast("O navegador não deixou abrir a janela flutuante.");
+  pipWin = w;
+  document.querySelectorAll('style, link[rel="stylesheet"]').forEach(n => w.document.head.appendChild(n.cloneNode(true)));
+  Object.assign(w.document.body.style, { margin: 0, minHeight: 0, background: "#0f1923" });
+  el.classList.add("pip"); w.document.body.append(el);
+  $("gPop").title = "Voltar o jogo para a página";
+  gameInput(w.document);
+  w.addEventListener("pagehide", () => {
+    el.classList.remove("pip"); $("toasts").before(el); pipWin = null;
+    $("gPop").title = "Abrir numa janela que fica por cima de tudo";
+  });
+};
 function sendScore() {
   if (!game) return;
   game.players.set("me", { s: game.score, done: game.done });
@@ -1749,9 +1922,8 @@ function finishGame() {
   if (!game || game.finished) return;
   game.finished = true; game.timers.forEach(clearTimeout);
   const [[id, p]] = [...game.players].filter(([, p]) => p.done).sort((a, b) => b[1].s - a[1].s);
-  const who = id === "me" ? "Você" : nameOf(id);
-  $("gMsg").textContent += ` ${who} ganhou com ${p.s} ${Math.abs(p.s) === 1 ? "ponto" : "pontos"}.`;
-  $("gMsg").textContent = $("gMsg").textContent.replace(" Esperando a tropa…", "");
+  $("gWin").textContent = id === "me" ? "Você venceu" : `${nameOf(id)} venceu`;
+  $("gMsg").textContent = $("gMsg").textContent.replace(" Esperando a tropa…", "") + ` Venceu com ${p.s} ${Math.abs(p.s) === 1 ? "ponto" : "pontos"}.`;
   $("gAgain").classList.remove("hidden");
   if (id === "me") sfx("coins");
 }
@@ -1770,12 +1942,12 @@ function closeGame() {
   game.timers.forEach(clearTimeout);
   if (!game.done) { game.done = true; sendScore(); }
   game.range?.dispose();
-  if (game.onMove) document.removeEventListener("mousemove", game.onMove);
-  if (game.onKey) document.removeEventListener("keydown", game.onKey);
-  if (document.pointerLockElement) document.exitPointerLock();
+  const doc = $("range").ownerDocument;
+  if (doc.pointerLockElement) doc.exitPointerLock();
   $("range").onpointerdown = null; $("gFx").replaceChildren();
   game = null;
   $("game").classList.add("hidden");
+  pipWin?.close();
 }
 $("gamePlay").onclick = $("emptyPlay").onclick = $("gAgain").onclick = startGame;
 $("gClose").onclick = closeGame;
