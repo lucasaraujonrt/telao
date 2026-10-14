@@ -119,8 +119,13 @@ input[type=range]{accent-color:var(--papel);min-width:0}
 #range.locked{cursor:none}
 #gCanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 #range.cobra{animation:shake .35s}
-#cross{--c:var(--cross,#3fd0ff);position:absolute;left:50%;top:50%;width:18px;height:18px;translate:-50% -50%;pointer-events:none;
-  background:linear-gradient(var(--c),var(--c)) center/2px 100% no-repeat,linear-gradient(var(--c),var(--c)) center/100% 2px no-repeat;filter:drop-shadow(0 0 1px #000)}
+#cross{position:absolute;left:50%;top:50%;width:100px;height:100px;translate:-50% -50%;pointer-events:none;image-rendering:pixelated}
+#hitmark{position:absolute;left:50%;top:50%;width:26px;height:26px;translate:-50% -50%;pointer-events:none;opacity:0;--hm:#fff;
+  background:linear-gradient(45deg,transparent 45%,var(--hm) 45% 55%,transparent 55%),linear-gradient(-45deg,transparent 45%,var(--hm) 45% 55%,transparent 55%);
+  -webkit-mask:radial-gradient(circle,transparent 6px,#000 6.5px);mask:radial-gradient(circle,transparent 6px,#000 6.5px);filter:drop-shadow(0 0 1px #000)}
+#hitmark.head{--hm:#ff4655}
+#hitmark.on{animation:hitmark .22s ease-out}
+@keyframes hitmark{from{opacity:1;scale:1.25}to{opacity:0;scale:1}}
 #gFx{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .pow{position:absolute;translate:-50% -50%;font:800 26px/1 var(--poster);text-transform:uppercase;white-space:nowrap;color:var(--v-off);text-shadow:0 2px 6px rgba(0,0,0,.6);animation:pow .7s ease-out forwards}
 .pow.head{font-size:34px;color:var(--v-red)}
@@ -163,7 +168,19 @@ input[type=range]{accent-color:var(--papel);min-width:0}
 #gMsg{max-width:44ch;font-weight:700}
 .vbtn{background:var(--v-red);color:#fff;font:800 18px/1 var(--poster);text-transform:uppercase;letter-spacing:.08em;padding:13px 28px;border-radius:2px}
 .vbtn:hover{background:#ff5f6c}
-#gSet{position:absolute;right:10px;top:10px;z-index:3;display:grid;gap:10px;width:240px;padding:14px;background:rgba(15,25,35,.95);border-top:2px solid var(--v-red)}
+#gSet h4{font:800 16px/1 var(--poster);text-transform:uppercase;letter-spacing:.08em;margin-top:6px;padding-top:10px;border-top:1px solid var(--v-line)}
+#xhFields{display:grid;gap:8px}
+#xhFields .row{display:grid;grid-template-columns:1fr 64px 30px;align-items:center;gap:8px;font-size:12px;font-weight:700;color:rgba(236,232,225,.75)}
+#xhFields .row input[type=range]{accent-color:var(--v-red);width:100%;padding:0;border:0;background:none}
+#xhFields .row output{font-variant-numeric:tabular-nums;text-align:right}
+#xhFields .row.check{grid-template-columns:1fr auto}
+#xhFields .sub{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--v-red);margin-top:4px}
+#xhFields .color{display:flex;gap:6px;align-items:center}
+#xhFields .color select{flex:1}
+#xhFields input[type=color]{width:34px;height:30px;padding:0;border:0;background:none}
+.xhBtns{display:flex;flex-wrap:wrap;gap:6px}
+.xhBtns .vbtn{font-size:14px;padding:8px 12px}
+#gSet{position:absolute;right:10px;top:10px;z-index:3;display:grid;gap:10px;width:280px;max-height:calc(100% - 20px);overflow:auto;padding:14px;background:rgba(15,25,35,.95);border-top:2px solid var(--v-red)}
 #gSet label{display:grid;gap:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(236,232,225,.7)}
 #gSet input,#gSet select{font:600 14px/1.2 Archivo,sans-serif;color:var(--v-off);background:#1f2b36;border:1px solid var(--v-line);border-radius:2px;padding:7px 8px}
 #gEdpi{font-size:12px;color:rgba(236,232,225,.7)}
@@ -418,7 +435,8 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
     </header>
     <div id="range">
       <canvas id="gCanvas"></canvas>
-      <div id="cross"></div>
+      <canvas id="cross" width="100" height="100"></canvas>
+      <div id="hitmark"></div>
       <div id="gFx"></div>
       <ol id="gBoard"></ol>
       <div id="feed"></div>
@@ -435,7 +453,10 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
         <label>Sensibilidade do Valorant<input type="number" id="gSens" min="0.01" max="10" step="0.01" inputmode="decimal"></label>
         <span id="gEdpi"></span>
         <label>Skin<select id="gSkin"></select></label>
-        <label>Cor da mira<select id="gCross"><option value="#ffffff">Branca</option><option value="#3fd0ff">Ciano</option><option value="#7dff5a">Verde</option><option value="#ffe600">Amarela</option><option value="#ff3fa4">Rosa</option></select></label>
+        <h4>Mira</h4>
+        <div id="xhFields"></div>
+        <label>Código do Valorant<input type="text" id="xhCode" spellcheck="false" placeholder="0;P;c;5;h;0;0l;3;0o;2;0a;1;0f;0;1b;0"></label>
+        <div class="xhBtns"><button type="button" class="vbtn ghost" id="xhImport">Usar código</button><button type="button" class="vbtn ghost" id="xhCopy">Copiar</button><button type="button" class="vbtn ghost" id="xhReset">1-3-2-0</button></div>
       </form>
     </div>
   </section>
@@ -573,7 +594,7 @@ function start(code) {
       else if (m.t === "mode") startMode(m.mode, m.track, c.peer, m.reels, m.cobra);
       else if (m.t === "game") onGame(m, c.peer);
       else if (m.t === "gscore") onScore(m, c.peer);
-      else if (["duel", "duelok", "duelno", "dpos", "dhit", "ddie", "dleave"].includes(m.t)) onDuel(m, c.peer);
+      else if (["duel", "duelok", "duelno", "dpos", "dshot", "dhit", "ddie", "dleave"].includes(m.t)) onDuel(m, c.peer);
     });
     c.on("close", () => { conns.delete(c.peer); calls.delete(c.peer); names.delete(c.peer); awayIds.delete(c.peer); dropTile(c.peer);
       if (game?.duel && game.foe === c.peer) game.endDuel?.(`${nameOf(c.peer)} saiu da sala.`);
@@ -1089,6 +1110,7 @@ function sfx(kind) {
   else if (kind === "tickhi") { out.gain.value = 1; noise(.02, "highpass", 3500, 1.4); thump(2600, 1800, .04, .5); }
   else if (kind === "tomate") { noise(.4, "lowpass", 900, 1.3); thump(170, 45, .28, .9); }
   else if (kind === "ovo") { [0, .025, .06].forEach(a => noise(.03, "highpass", 2600, .9, a)); noise(.3, "lowpass", 1300, .8, .07); }
+  else if (kind === "hit") { out.gain.value = memeVol * .8; thump(2600, 2300, .045, .5); thump(1700, 1500, .05, .3, .012); }
   else if (kind === "shot") { out.gain.value = memeVol * .6; noise(.12, "lowpass", 2600, 1.6); thump(140, 45, .1, .7); }
   else if (kind === "punch") { noise(.07, "lowpass", 1800, 1.4); thump(190, 55, .14, .9); }
   else if (kind === "buzz") { const o = ac.createOscillator(), g = ac.createGain(); o.type = "sawtooth"; o.frequency.value = 98; g.gain.setValueAtTime(.3, t0); g.gain.setValueAtTime(.3, t0 + .3); g.gain.linearRampToValueAtTime(0, t0 + .36); o.connect(g).connect(out); o.start(t0); o.stop(t0 + .36); }
@@ -1549,7 +1571,7 @@ const SKINS = {
   tigrinho: ["Tigrinho", 0xffd400, 0xff7a1a, 0xfff3a0],
 };
 $("gSkin").append(...Object.entries(SKINS).map(([k, [label]]) => new Option(label, k)));
-const gameSettings = { gDpi: ["telao-dpi", "800"], gSens: ["telao-vsens", "0.4"], gSkin: ["telao-skin", "classica"], gCross: ["telao-cross", "#3fd0ff"] };
+const gameSettings = { gDpi: ["telao-dpi", "800"], gSens: ["telao-vsens", "0.4"], gSkin: ["telao-skin", "classica"] };
 const loadSetting = id => { const [key, def] = gameSettings[id]; $(id).value = store.get(key) || def; if (!$(id).value) $(id).value = def; };
 for (const id of Object.keys(gameSettings)) {
   loadSetting(id);
@@ -1561,10 +1583,116 @@ const turnPerCount = () => .07 * (+$("gSens").value || .4) * Math.PI / 180;
 function paintSettings() {
   const dpi = +$("gDpi").value || 800, sens = +$("gSens").value || .4;
   $("gEdpi").textContent = `eDPI ${Math.round(dpi * sens)}, ${(360 / (.07 * sens) / dpi * 2.54).toFixed(1)} cm para uma volta`;
-  $("range").style.setProperty("--cross", $("gCross").value);
   game?.range?.skin($("gSkin").value);
 }
 paintSettings();
+
+/* crosshair editor. Same fields and units (pixels) as Valorant's, and it reads and writes
+   Valorant's profile codes, so a crosshair can go both ways. */
+const VCOLORS = [["Branca", "#ffffff"], ["Verde", "#00ff00"], ["Verde-amarelada", "#7fff00"], ["Amarelo-esverdeada", "#dfff00"], ["Amarela", "#ffff00"], ["Ciano", "#00ffff"], ["Rosa", "#ff00ff"], ["Vermelha", "#ff0000"]];
+// Lines are [opacity, length, thickness, offset]: "1-3-2-0" is the inner lines.
+const XH_1320 = { color: "#00ffff", outline: 1, outlineOpacity: .5, outlineThickness: 1, dot: 0, dotOpacity: 1, dotThickness: 2, inner: [1, 3, 2, 0], outer: [0, 2, 2, 10] };
+const XH_VALORANT = { color: "#ffffff", outline: 1, outlineOpacity: .5, outlineThickness: 1, dot: 0, dotOpacity: 1, dotThickness: 2, inner: [.8, 6, 2, 3], outer: [.35, 2, 2, 10] };
+let xh = (() => { try { return { ...XH_1320, ...JSON.parse(store.get("telao-xhair")) }; } catch { return { ...XH_1320 }; } })();
+const XH_FIELDS = [
+  ["sub", "Geral"], ["check", "Contorno", "outline"], ["range", "Opacidade do contorno", "outlineOpacity", 0, 1, .05], ["range", "Espessura do contorno", "outlineThickness", 1, 6, 1],
+  ["check", "Ponto central", "dot"], ["range", "Opacidade do ponto", "dotOpacity", 0, 1, .05], ["range", "Tamanho do ponto", "dotThickness", 1, 6, 1],
+  ["sub", "Linhas internas"], ["range", "Opacidade", "inner.0", 0, 1, .05], ["range", "Comprimento", "inner.1", 0, 20, 1], ["range", "Espessura", "inner.2", 0, 10, 1], ["range", "Deslocamento", "inner.3", 0, 20, 1],
+  ["sub", "Linhas externas"], ["range", "Opacidade", "outer.0", 0, 1, .05], ["range", "Comprimento", "outer.1", 0, 20, 1], ["range", "Espessura", "outer.2", 0, 10, 1], ["range", "Deslocamento", "outer.3", 0, 40, 1],
+];
+const xhGet = k => k.includes(".") ? xh[k.split(".")[0]][+k.split(".")[1]] : xh[k];
+const xhSet = (k, v) => { if (k.includes(".")) { const [a, i] = k.split("."); xh[a] = [...xh[a]]; xh[a][+i] = v; } else xh[k] = v; };
+function buildXhFields() {
+  const box = $("xhFields"), doc = box.ownerDocument, el = (tag, props) => Object.assign(doc.createElement(tag), props);
+  const color = el("div", { className: "row color" });
+  const sel = el("select", { id: "xhColor" }); sel.append(...VCOLORS.map(([n, c]) => new Option(n, c)), new Option("Personalizada", "custom"));
+  const pick = el("input", { type: "color", id: "xhPick", title: "Cor personalizada" });
+  sel.oninput = () => { if (sel.value !== "custom") xh.color = sel.value; else xh.color = pick.value; xhChanged(); };
+  pick.oninput = () => { sel.value = "custom"; xh.color = pick.value; xhChanged(); };
+  color.append(sel, pick);
+  box.replaceChildren(el("div", { className: "sub", textContent: "Cor" }), color);
+  for (const [kind, label, key, min, max, step] of XH_FIELDS) {
+    if (kind === "sub") { box.append(el("div", { className: "sub", textContent: label })); continue; }
+    const row = el("label", { className: "row" + (kind === "check" ? " check" : "") });
+    if (kind === "check") {
+      const c = el("input", { type: "checkbox" }); c.dataset.k = key; c.oninput = () => { xh[key] = c.checked ? 1 : 0; xhChanged(); };
+      row.append(label, c);
+    } else {
+      const r = el("input", { type: "range", min, max, step }), o = el("output"); r.dataset.k = key;
+      r.oninput = () => { xhSet(key, +r.value); xhChanged(); };
+      row.append(label, r, o);
+    }
+    box.append(row);
+  }
+  paintXhFields();
+}
+function paintXhFields() {
+  const box = $("xhFields");
+  const known = VCOLORS.some(([, c]) => c === xh.color);
+  box.querySelector("#xhColor").value = known ? xh.color : "custom"; box.querySelector("#xhPick").value = xh.color;
+  box.querySelectorAll("input[data-k]").forEach(i => {
+    if (i.type === "checkbox") i.checked = !!xh[i.dataset.k];
+    else { i.value = xhGet(i.dataset.k); i.nextSibling.textContent = xhGet(i.dataset.k); }
+  });
+  $("xhCode").value = xhCode();
+}
+function xhChanged() { store.set("telao-xhair", JSON.stringify(xh)); drawCross(); paintXhFields(); }
+function drawCross() {
+  const cv = $("cross"), dpr = Math.min(3, (cv.ownerDocument.defaultView || window).devicePixelRatio || 1);
+  cv.width = cv.height = 100 * dpr;
+  const x = cv.getContext("2d"); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, 100, 100);
+  const c = 50, rects = [];
+  for (const [a, l, t, o] of [xh.inner, xh.outer]) {
+    if (!(a > 0 && l > 0 && t > 0)) continue;
+    const h = Math.floor(t / 2);
+    rects.push([a, c + o, c - h, l, t], [a, c - o - l, c - h, l, t], [a, c - h, c + o, t, l], [a, c - h, c - o - l, t, l]);
+  }
+  if (xh.dot && xh.dotOpacity > 0) { const h = Math.floor(xh.dotThickness / 2); rects.push([xh.dotOpacity, c - h, c - h, xh.dotThickness, xh.dotThickness]); }
+  if (xh.outline) {
+    const w = xh.outlineThickness; x.fillStyle = "#000";
+    for (const [a, rx, ry, rw, rh] of rects) { x.globalAlpha = xh.outlineOpacity * a; x.fillRect(rx - w, ry - w, rw + 2 * w, rh + 2 * w); }
+  }
+  x.fillStyle = xh.color;
+  for (const [a, rx, ry, rw, rh] of rects) { x.globalAlpha = a; x.fillRect(rx, ry, rw, rh); }
+  x.globalAlpha = 1;
+}
+// Valorant codes list "key;value" pairs after "P" for the primary crosshair and only
+// name what differs from the game's default.
+function parseXhCode(code) {
+  const parts = code.trim().split(";").map(p => p.trim());
+  const at = parts.indexOf("P"); if (at < 0) return null;
+  const v = { ...XH_VALORANT, inner: [...XH_VALORANT.inner], outer: [...XH_VALORANT.outer] };
+  let colorIdx = 0, custom = null, innerOn = 1, outerOn = 1;
+  for (let i = at + 1; i + 1 < parts.length; i += 2) {
+    const k = parts[i], n = parseFloat(parts[i + 1]);
+    if (k === "A" || k === "S") break;
+    const set = { c: () => colorIdx = n, u: () => custom = "#" + parts[i + 1].slice(0, 6).toLowerCase(), h: () => v.outline = n ? 1 : 0, t: () => v.outlineThickness = n, o: () => v.outlineOpacity = n,
+      d: () => v.dot = n ? 1 : 0, z: () => v.dotThickness = n, a: () => v.dotOpacity = n,
+      "0b": () => innerOn = n, "0t": () => v.inner[2] = n, "0l": () => v.inner[1] = n, "0o": () => v.inner[3] = n, "0a": () => v.inner[0] = n,
+      "1b": () => outerOn = n, "1t": () => v.outer[2] = n, "1l": () => v.outer[1] = n, "1o": () => v.outer[3] = n, "1a": () => v.outer[0] = n }[k];
+    if (set && (k === "u" || Number.isFinite(n))) set();
+  }
+  v.color = colorIdx === 8 && custom ? custom : (VCOLORS[colorIdx] || VCOLORS[0])[1];
+  if (!innerOn) v.inner[0] = 0;
+  if (!outerOn) v.outer[0] = 0;
+  return v;
+}
+function xhCode() {
+  const ci = VCOLORS.findIndex(([, c]) => c === xh.color), r = n => +(+n).toFixed(3);
+  const color = ci >= 0 ? `c;${ci}` : `c;8;u;${xh.color.slice(1).toUpperCase()}FF`;
+  const [ia, il, it, io] = xh.inner, [oa, ol, ot, oo] = xh.outer;
+  return `0;P;${color};h;${xh.outline};t;${xh.outlineThickness};o;${r(xh.outlineOpacity)};d;${xh.dot};z;${xh.dotThickness};a;${r(xh.dotOpacity)};` +
+    `0b;${ia > 0 ? 1 : 0};0t;${it};0l;${il};0o;${io};0a;${r(ia)};0f;0;1b;${oa > 0 ? 1 : 0};1t;${ot};1l;${ol};1o;${oo};1a;${r(oa)};1m;0;1f;0`;
+}
+$("xhImport").onclick = () => {
+  const v = parseXhCode($("xhCode").value);
+  if (!v) return toast("Esse código não parece um código de mira do Valorant.");
+  xh = v; xhChanged();
+};
+$("xhCopy").onclick = () => navigator.clipboard.writeText(xhCode()).then(() => toast("Código copiado. No Valorant: Mira › Importar perfil."), () => {});
+$("xhReset").onclick = () => { xh = { ...XH_1320, color: xh.color }; xhChanged(); };
+buildXhFields(); drawCross();
+
 function gameSchedule(seed) {
   const r = seeded(seed), out = [];
   for (let at = 300; at < GAME_MS - 700;) {
@@ -1675,7 +1803,8 @@ function buildRange(cv) {
   sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -22, right: 22, top: 22, bottom: -22, near: 1, far: 60 }); sun.shadow.bias = -.0004;
   scene.add(sun);
   const std = (color, o = {}) => new T.MeshStandardMaterial({ color, roughness: .82, metalness: 0, ...o });
-  const add = (geo, mat, x, y, z, cast = true) => { const m = new T.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = cast; m.receiveShadow = true; scene.add(m); return m; };
+  const solids = [];   // everything a bullet can stop on and leave a mark
+  const add = (geo, mat, x, y, z, cast = true) => { const m = new T.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = cast; m.receiveShadow = true; scene.add(m); solids.push(m); return m; };
   const floor = add(new T.PlaneGeometry(90, 90), std(0xb4bbbf, { map: concreteTexture() }), 0, 0, -10, false); floor.rotation.x = -Math.PI / 2;
   const wall = std(0x33424d), trim = std(0xe3ded5), red = std(0xff4655, { emissive: 0xff4655, emissiveIntensity: .35 });
   add(new T.BoxGeometry(44, 9, 1), wall, 0, 4.5, -27);
@@ -1721,14 +1850,38 @@ function buildRange(cv) {
     foe.userData.foe = true; foe.position.set(foeAt.x, 0, foeAt.z); scene.add(foe);
   }
   function setFoe(m) { Object.assign(foeAt, { x: +m.x || 0, y: +m.y || 0, z: +m.z || 0, yaw: +m.yaw || 0 }); if (foe) foe.visible = !m.dead; }
+  // Returns where the bullet ended. `part` is set when it hit a bot or the other player;
+  // otherwise it stopped on a wall, crate or the floor (or flew off), and `normal` says
+  // which way that surface faces, for the bullet mark.
   function shoot(nx, ny) {
     ray.setFromCamera({ x: nx, y: ny }, cam);
     const live = [...bots].filter(g => !g.userData.dead);
     if (foe?.visible) live.push(foe);
-    const hit = ray.intersectObjects([...live, ...crates], true)[0];
-    if (!hit || crates.includes(hit.object) || hit.object.isSprite && hit.object.parent === foe) return null;
+    const hit = ray.intersectObjects([...live, ...solids], true).find(i => !(i.object.isSprite && !i.object.userData.part));
+    if (!hit) return { end: ray.ray.at(90, new T.Vector3()) };
+    if (!hit.object.userData.part) return { end: hit.point, normal: hit.face.normal.clone().transformDirection(hit.object.matrixWorld) };
     let g = hit.object; while (g.parent && !g.userData.ev && !g.userData.foe) g = g.parent;
-    return { g, part: hit.object.userData.part, at: hit.point, foe: g === foe };
+    return { g, part: hit.object.userData.part, at: hit.point, end: hit.point, foe: g === foe };
+  }
+  // Tracers fly from the muzzle to where the bullet ended; marks stay on the walls for the
+  // whole round, so a spray draws its pattern.
+  const tracerGeo = new T.BoxGeometry(.014, .014, 1).translate(0, 0, .5);
+  const markGeo = new T.CircleGeometry(.045, 12), markMat = new T.MeshBasicMaterial({ color: 0x15181b, transparent: true, opacity: .85, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 });
+  const tracers = [], marks = [];
+  function tracer(end, from) {
+    const start = from || flash.getWorldPosition(new T.Vector3());
+    const m = new T.Mesh(tracerGeo, new T.MeshBasicMaterial({ color: from ? 0xff8a8a : 0xffe7a0, transparent: true, opacity: .95, blending: T.AdditiveBlending, depthWrite: false }));
+    m.position.copy(start); m.lookAt(end); m.scale.z = start.distanceTo(end);
+    m.userData.born = performance.now(); scene.add(m); tracers.push(m);
+  }
+  function mark(at, normal) {
+    const m = new T.Mesh(markGeo, markMat); m.position.copy(at).addScaledVector(normal, .004); m.lookAt(at.clone().add(normal));
+    scene.add(m); marks.push(m); if (marks.length > 120) scene.remove(marks.shift());
+  }
+  function foeTracer(end) {
+    if (!foe) return;
+    const muzzle = new T.Vector3(.22, 1.05, -.7).applyAxisAngle(new T.Vector3(0, 1, 0), foe.rotation.y).add(foe.position);
+    tracer(new T.Vector3(...end), muzzle);
   }
   const screen = v => { const p = v.clone().project(cam); return [(p.x + 1) / 2 * 100, (1 - p.y) / 2 * 100]; };
 
@@ -1777,7 +1930,7 @@ function buildRange(cv) {
   }
   function spawnAt(x, z, yaw) { Object.assign(me, { x, z, vx: 0, vz: 0, y: 0, vy: 0 }); look.yaw = yaw; look.pitch = 0; rec.p = rec.y = 0; }
   function fire() { kick = 1; flashUntil = performance.now() + 45; flash.material.rotation = Math.random() * Math.PI; }
-  const api = { look, me, bounds, spawn, kill, shoot, screen, skin, fire, recoil, spawnAt, addFoe, setFoe, jump, speed, onTick: null,
+  const api = { look, me, bounds, spawn, kill, shoot, tracer, mark, foeTracer, screen, skin, fire, recoil, spawnAt, addFoe, setFoe, jump, speed, onTick: null,
     fovY: () => cam.fov * Math.PI / 180, aspect: () => cam.aspect,
     dispose() { rafWin.cancelAnimationFrame(raf); r.dispose(); r.forceContextLoss(); } };
   function frame() {
@@ -1812,6 +1965,10 @@ function buildRange(cv) {
       foe.rotation.y = foeAt.yaw;
     }
     flash.visible = t < flashUntil; flashLight.intensity = flash.visible ? 3 : 0;
+    for (let i = tracers.length - 1; i >= 0; i--) {
+      const m = tracers[i], age = (t - m.userData.born) / 110;
+      if (age >= 1) { scene.remove(m); m.material.dispose(); tracers.splice(i, 1); } else m.material.opacity = .95 * (1 - age);
+    }
     const w = cv.clientWidth, h = cv.clientHeight;
     if (w && h && (cv.width !== Math.round(w * r.getPixelRatio()) || cv.height !== Math.round(h * r.getPixelRatio()))) {
       // Valorant's 103 degrees horizontal field of view, whatever the window's shape.
@@ -1882,9 +2039,13 @@ async function openRange(g) {
     const v = range.speed(), cone = (v > 6 ? .12 : v > 3 ? .07 : v > 1 ? .025 : 0) + Math.min(g.burst, 9) * .003;
     const a = Math.random() * Math.PI * 2, d = Math.random() * cone / (range.fovY() / 2);
     g.shots++; sfx("shot"); range.fire();
-    const hit = range.shoot(nx + Math.cos(a) * d / range.aspect(), ny + Math.sin(a) * d);
+    const sx = nx + Math.cos(a) * d / range.aspect(), sy = ny + Math.sin(a) * d, res = range.shoot(sx, sy);
     range.recoil(g.burst);
-    if (hit) g.onHit(hit);
+    range.tracer(res.end);
+    g.onShot?.(res.end);
+    if (!res.part) { if (res.normal) range.mark(res.end, res.normal); return; }
+    if (res.part !== "tigre") hitMarker(res.part === "head", (sx + 1) / 2 * 100, (1 - sy) / 2 * 100);
+    g.onHit(res);
   }
   const aim = e => {
     if (locked()) return [0, 0];
@@ -1912,6 +2073,11 @@ function countdown(g, t, playAt) {
   if (n > 0) { if (n !== g.lastCount) { g.lastCount = n; $("gCount").textContent = n; show("gCount", true); sfx("tick"); } return false; }
   g.playing = true; show("gCount", false); sfx("tickhi");
   return true;
+}
+function hitMarker(head, x, y) {
+  const m = $("hitmark"); m.style.left = x + "%"; m.style.top = y + "%";
+  m.classList.toggle("head", head); m.classList.remove("on"); void m.offsetWidth; m.classList.add("on");
+  sfx("hit");
 }
 const exitLock = () => { const doc = $("range").ownerDocument; if (doc.pointerLockElement) doc.exitPointerLock(); };
 
@@ -2003,8 +2169,10 @@ async function playDuel(inv) {
     const [x, y] = range.screen(hit.at); g.fx(head ? "−160" : "−40", head ? "head" : "", x, y);
     sfx(head ? "coins" : "punch");
   };
+  g.onShot = end => sendTo(foe, { t: "dshot", d: g.d, e: [end.x, end.y, end.z].map(n => Math.round(n * 100) / 100) });
   g.onNet = m => {
     if (m.t === "dpos") g.range?.setFoe(m);
+    else if (m.t === "dshot" && Array.isArray(m.e) && m.e.length === 3) g.range?.foeTracer(m.e.map(Number));
     else if (m.t === "dhit") {
       if (!g.playing || g.dead) return;
       g.hp -= Math.max(0, Math.min(DMG.head, +m.dmg || 0)); paintHp();
@@ -2115,9 +2283,9 @@ $("gPop").onclick = async () => {
   Object.assign(w.document.body.style, { margin: 0, minHeight: 0, background: "#0f1923" });
   el.classList.add("pip"); w.document.body.append(el);
   $("gPop").title = "Voltar o jogo para a página";
-  gameInput(w.document);
+  gameInput(w.document); drawCross();
   w.addEventListener("pagehide", () => {
-    el.classList.remove("pip"); $("toasts").before(el); pipWin = null;
+    el.classList.remove("pip"); $("toasts").before(el); pipWin = null; drawCross();
     $("gPop").title = "Abrir numa janela que fica por cima de tudo";
   });
 };
