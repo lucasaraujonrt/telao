@@ -136,6 +136,21 @@ input[type=range]{accent-color:var(--papel);min-width:0}
 #feed .head{color:var(--v-red)}
 #feed .bad{color:#ffd400}
 @keyframes feed{0%{opacity:0;translate:14px 0}8%,78%{opacity:1;translate:0}100%{opacity:0}}
+#gHp{--hp:1;position:absolute;left:16px;bottom:14px;display:grid;gap:4px;pointer-events:none;text-shadow:0 2px 6px rgba(0,0,0,.6)}
+#gHp b{font:800 40px/1 var(--poster)}
+#gHp i{display:block;width:150px;height:5px;background:linear-gradient(90deg,var(--v-off) calc(var(--hp)*100%),rgba(15,25,35,.6) 0)}
+#gHurt{position:absolute;inset:0;pointer-events:none;opacity:0;box-shadow:inset 0 0 90px 30px rgba(255,70,85,.8)}
+#gHurt.on{animation:hurt .45s ease-out}
+@keyframes hurt{from{opacity:1}to{opacity:0}}
+#gDead{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:6px;background:rgba(15,25,35,.55);backdrop-filter:grayscale(1);pointer-events:none}
+#gDead h3{font:900 56px/1 var(--poster);text-transform:uppercase;color:var(--v-red)}
+#gDead p{font-weight:700}
+#gLobby{position:absolute;inset:0;z-index:2;display:grid;place-content:center;justify-items:center;gap:16px;padding:20px;text-align:center;background:var(--v-ink)}
+#gLobbyTitle{font:900 clamp(28px,5vw,44px)/1 var(--poster);text-transform:uppercase;max-width:18ch}
+#gLobbyBtns{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:520px}
+.vbtn.ghost{background:transparent;box-shadow:inset 0 0 0 2px var(--v-line)}
+.vbtn.ghost:hover{background:rgba(236,232,225,.1)}
+.gamebtn+.gamebtn{margin-top:8px}
 #ammo{position:absolute;right:16px;bottom:12px;display:flex;align-items:baseline;gap:6px;pointer-events:none;text-shadow:0 2px 6px rgba(0,0,0,.6)}
 #ammo b{font:800 40px/1 var(--poster)}
 #ammo span{font:800 18px/1 var(--poster);opacity:.6}
@@ -371,8 +386,9 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
     </section>
     <section class="board">
       <h2>Joguinho</h2>
-      <p class="hint">Para a fila: 30 segundos de treino de mira estilo Valorant, a sala toda junto. Cabeça vale 3, corpo 1, atirar no tigrinho tira 3.</p>
+      <p class="hint">Para a fila. Mira da Tropa: 30 segundos de treino de mira, a sala toda junto. Duelo: 1x1 contra alguém da sala, quem fizer 5 abates ganha.</p>
       <button id="gamePlay" class="yes gamebtn">🎯 Mira da Tropa<kbd>J</kbd></button>
+      <button id="duelPlay" class="yes gamebtn">⚔️ Duelo 1x1</button>
     </section>
     <section class="board">
       <div class="boardhead"><h2>Memes</h2><button class="rename" id="editMemes">editar</button></div>
@@ -406,9 +422,13 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
       <div id="gFx"></div>
       <ol id="gBoard"></ol>
       <div id="feed"></div>
-      <div id="ammo"><b id="ammoN">25</b><span>/ ∞</span><em id="reloading" class="hidden">Recarregando</em></div>
+      <div id="ammo"><b>∞</b></div>
+      <div id="gHp" class="hidden"><b id="gHpN">150</b><i></i></div>
+      <div id="gHurt"></div>
+      <div id="gDead" class="hidden"><h3>Você morreu</h3><p id="gDeadBy"></p></div>
       <div id="gCount" class="hidden"></div>
-      <p id="lockHint">Clique para travar a mira. WASD anda, Shift caminha, espaço pula, R recarrega, Esc solta o mouse.</p>
+      <p id="lockHint">Clique para travar a mira. WASD anda, Shift caminha, espaço pula, segure o clique para rajada. Esc solta o mouse.</p>
+      <div id="gLobby" class="hidden"><h3 id="gLobbyTitle"></h3><div id="gLobbyBtns"></div></div>
       <div id="gEnd" class="hidden"><h3 id="gWin"></h3><p id="gMsg"></p><button id="gAgain" class="vbtn hidden">Jogar de novo</button></div>
       <form id="gSet" class="hidden" onsubmit="return false">
         <label>DPI do mouse<input type="number" id="gDpi" min="100" max="32000" step="50" inputmode="numeric"></label>
@@ -442,7 +462,7 @@ const store = { get: k => { try { return localStorage.getItem(k); } catch { retu
 // Audio preferences are local to this viewer, keyed by peer id.
 const audio = { deaf: false, muted: new Map(), vol: new Map() };
 const names = new Map();     // peerId -> nickname
-let myName = "", render = () => {}, rename = () => {}, broadcast = () => {}, nameOf = id => id;
+let myName = "", render = () => {}, rename = () => {}, broadcast = () => {}, sendTo = () => {}, nameOf = id => id;
 // Tiles are keyed "me" locally; on the wire everyone is their peer id.
 let toWire = id => id, fromWire = id => id, announce = () => {};
 const canNotify = () => "Notification" in window && Notification.permission === "granted";
@@ -553,8 +573,11 @@ function start(code) {
       else if (m.t === "mode") startMode(m.mode, m.track, c.peer, m.reels, m.cobra);
       else if (m.t === "game") onGame(m, c.peer);
       else if (m.t === "gscore") onScore(m, c.peer);
+      else if (["duel", "duelok", "duelno", "dpos", "dhit", "ddie", "dleave"].includes(m.t)) onDuel(m, c.peer);
     });
-    c.on("close", () => { conns.delete(c.peer); calls.delete(c.peer); names.delete(c.peer); awayIds.delete(c.peer); dropTile(c.peer); });
+    c.on("close", () => { conns.delete(c.peer); calls.delete(c.peer); names.delete(c.peer); awayIds.delete(c.peer); dropTile(c.peer);
+      if (game?.duel && game.foe === c.peer) game.endDuel?.(`${nameOf(c.peer)} saiu da sala.`);
+      if (invite?.id === c.peer) { invite = null; lobby("A pessoa saiu da sala.", [["Fechar", closeGame, true]]); } });
   }
   function callPeer(id) {
     if (!stream) return;
@@ -611,6 +634,7 @@ function start(code) {
     render();
   };
   broadcast = msg => conns.forEach(c => c.open && c.send(msg));
+  sendTo = (id, msg) => { const c = conns.get(id); if (c?.open) c.send(msg); };
   announce = () => broadcast(hello());
   toWire = id => id === "me" ? myId : id;
   fromWire = id => id === myId ? "me" : id;
@@ -1507,17 +1531,15 @@ addEventListener("keydown", e => {
 // seeded 30 seconds of bots on their own screen and the scores travel live, so no one
 // referees who hit first. Time is driven by the render loop of whichever window shows the
 // game, so a pop-out window keeps running while the main tab sits in the background.
-const GAME_MS = 30000, PTS = { head: 3, body: 1, tigre: -3 }, MAG = 25, RELOAD_MS = 2500, FIRE_MS = 103;
-const AK_URL = "models/ak47.glb";
+const GAME_MS = 30000, PTS = { head: 3, body: 1, tigre: -3 }, FIRE_MS = 103;
 let game = null, unlockedAt = 0, threeP = null;
 const loadScript = src => new Promise((ok, no) => document.head.appendChild(Object.assign(document.createElement("script"), { src, onload: ok, onerror: no })));
-// r147 is the last release that still ships the GLTF loader as a plain script.
 const loadThree = () => threeP ??= (window.THREE ? Promise.resolve() : loadScript("https://unpkg.com/three@0.147.0/build/three.min.js"))
   .catch(e => { threeP = null; throw e; });
-const loadGltf = () => THREE.GLTFLoader ? Promise.resolve() : loadScript("https://unpkg.com/three@0.147.0/examples/js/loaders/GLTFLoader.js");
-// Skins recolor the built-in rifle. A real AK-47 model shows up as one more skin when
-// public/models/ak47.glb exists.
+// Skins recolor the rifle.
+// [name, metal, furniture, glow]; no furniture color means real wood, no glow means none.
 const SKINS = {
+  classica: ["AK-47 clássica", 0x2b2d31, null, null],
   padrao: ["Padrão", 0x3a3a44, 0x1f1f26, 0x9a9aa8],
   prime: ["Prime", 0xf2efe6, 0xd4a83a, 0x5ad1ff],
   reaver: ["Reaver", 0x1c1726, 0x4a3560, 0xff2b5a],
@@ -1527,13 +1549,12 @@ const SKINS = {
   tigrinho: ["Tigrinho", 0xffd400, 0xff7a1a, 0xfff3a0],
 };
 $("gSkin").append(...Object.entries(SKINS).map(([k, [label]]) => new Option(label, k)));
-const gameSettings = { gDpi: ["telao-dpi", "800"], gSens: ["telao-vsens", "0.4"], gSkin: ["telao-skin", "prime"], gCross: ["telao-cross", "#3fd0ff"] };
+const gameSettings = { gDpi: ["telao-dpi", "800"], gSens: ["telao-vsens", "0.4"], gSkin: ["telao-skin", "classica"], gCross: ["telao-cross", "#3fd0ff"] };
 const loadSetting = id => { const [key, def] = gameSettings[id]; $(id).value = store.get(key) || def; if (!$(id).value) $(id).value = def; };
 for (const id of Object.keys(gameSettings)) {
   loadSetting(id);
   $(id).oninput = () => { store.set(gameSettings[id][0], $(id).value); paintSettings(); };
 }
-fetch(AK_URL, { method: "HEAD" }).then(r => { if (r.ok) { $("gSkin").prepend(new Option("AK-47", "ak47")); loadSetting("gSkin"); } }).catch(() => {});
 // Valorant turns 0.07 degrees per mouse count times the in-game sensitivity. With raw
 // mouse input the counts here are the same, so the same sens and DPI feel the same.
 const turnPerCount = () => .07 * (+$("gSens").value || .4) * Math.PI / 180;
@@ -1570,6 +1591,76 @@ function concreteTexture() {
   x.strokeStyle = "rgba(55,64,70,.35)"; x.lineWidth = 3; x.strokeRect(0, 0, 256, 256);
   const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(24, 24); t.anisotropy = 8; t.encoding = THREE.sRGBEncoding; return t;
 }
+function woodTexture() {
+  const c = Object.assign(document.createElement("canvas"), { width: 512, height: 128 }), x = c.getContext("2d");
+  const base = x.createLinearGradient(0, 0, 0, 128); base.addColorStop(0, "#7a3d1b"); base.addColorStop(.5, "#8d4b24"); base.addColorStop(1, "#6b3316");
+  x.fillStyle = base; x.fillRect(0, 0, 512, 128);
+  for (let i = 0; i < 70; i++) {
+    const y0 = Math.random() * 128, amp = 2 + Math.random() * 6, f = .005 + Math.random() * .02;
+    x.strokeStyle = Math.random() < .65 ? `rgba(50,20,6,${.08 + Math.random() * .2})` : `rgba(190,120,70,${.06 + Math.random() * .12})`;
+    x.lineWidth = .6 + Math.random() * 2.2; x.beginPath();
+    for (let px = 0; px <= 512; px += 8) x.lineTo(px, y0 + Math.sin(px * f + i) * amp);
+    x.stroke();
+  }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3, 14); t.encoding = THREE.sRGBEncoding; return t;
+}
+// An AKM traced as side profiles (meters, x toward the muzzle, y up) and extruded, the
+// way you would draw it in an SVG editor. Returned pointing down -z, centered on the receiver.
+function buildAk(T, m) {
+  const g = new T.Group(), glow = [];
+  const ext = (pts, depth, mat) => {
+    const sh = new T.Shape(); sh.moveTo(...pts[0]);
+    for (const p of pts.slice(1)) p.length === 4 ? sh.quadraticCurveTo(...p) : sh.lineTo(...p);
+    sh.closePath();
+    const geo = new T.ExtrudeGeometry(sh, { depth, bevelEnabled: true, bevelThickness: .003, bevelSize: .0025, bevelSegments: 2, curveSegments: 18 });
+    geo.translate(0, 0, -depth / 2);
+    const mesh = new T.Mesh(geo, mat); g.add(mesh); return mesh;
+  };
+  const cyl = (r, x0, x1, y, mat, z = 0) => {
+    const mesh = new T.Mesh(new T.CylinderGeometry(r, r, x1 - x0, 18), mat);
+    mesh.rotation.z = Math.PI / 2; mesh.position.set((x0 + x1) / 2, y, z); g.add(mesh); return mesh;
+  };
+  const box = (x0, x1, y0, y1, d, mat, z = 0) => {
+    const mesh = new T.Mesh(new T.BoxGeometry(x1 - x0, y1 - y0, d), mat);
+    mesh.position.set((x0 + x1) / 2, (y0 + y1) / 2, z); g.add(mesh); return mesh;
+  };
+  // stock and butt plate
+  ext([[0, -.004], [.018, .004], [.262, .02], [.27, -.026], [.205, -.048], [.022, -.136], [0, -.13]], .036, m.wood);
+  box(-.007, .003, -.132, .002, .042, m.steel);
+  // receiver, dust cover and its rib
+  ext([[.262, -.032], [.525, -.032], [.525, .02], [.512, .03], [.29, .03], [.268, .024]], .044, m.steel);
+  const cover = cyl(.02, .29, .512, .022, m.steel); cover.scale.set(1, 1, 1.1);
+  box(.3, .5, .04, .044, .008, m.steel);
+  // rear sight block and leaf
+  ext([[.52, .02], [.578, .02], [.578, .034], [.535, .05], [.52, .05]], .03, m.steel);
+  box(.535, .578, .05, .055, .016, m.steel);
+  // lower handguard with its finger groove, upper handguard over the gas tube
+  ext([[.53, -.03], [.545, -.041], [.6, -.036], [.62, -.041], [.69, -.035], [.702, -.024], [.702, .012], [.53, .012]], .052, m.wood);
+  const upper = cyl(.016, .565, .7, .032, m.wood); upper.scale.set(1, 1, 1.3);
+  cyl(.0105, .7, .79, .032, m.steel);
+  box(.7, .726, -.01, .046, .03, m.steel);
+  // barrel, front sight with its ears, slant muzzle brake
+  cyl(.0095, .52, .875, 0, m.steel);
+  ext([[.775, -.013], [.806, -.013], [.806, .03], [.8, .064], [.784, .064], [.775, .03]], .026, m.steel);
+  ext([[.866, -.014], [.915, -.014], [.905, .014], [.866, .014]], .026, m.steel);
+  // curved magazine with two stamped ribs
+  ext([[.415, -.03], [.478, -.03], [.49, -.14, .566, -.238], [.506, -.253], [.432, -.15, .415, -.03]], .03, m.mag);
+  for (const t of [.35, .62]) {
+    const rib = box(-.002, .002, -.06, .06, .034, m.mag); rib.position.set(.447 + t * t * .09, -.03 - t * .21, 0); rib.rotation.z = .25 + t * .45; rib.scale.set(1, .3, 1);
+  }
+  // pistol grip, trigger guard, trigger
+  ext([[.335, -.032], [.372, -.032], [.364, -.06], [.34, -.138], [.306, -.133], [.322, -.06]], .03, m.grip);
+  g.add(new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3([[.38, -.032], [.382, -.066], [.41, -.075], [.44, -.062], [.446, -.032]].map(([x, y]) => new T.Vector3(x, y, 0))), 24, .0035, 6), m.steel));
+  const trig = box(.404, .411, -.062, -.032, .006, m.steel); trig.rotation.z = .2;
+  // selector lever and charging handle on the right side
+  const sel = box(.33, .47, .002, .011, .004, m.steel, .025); sel.rotation.z = -.05;
+  box(.505, .52, .004, .018, .03, m.steel, .034);
+  // light strips for the flashy skins
+  for (const z of [-.0235, .0235]) glow.push(box(.3, .5, -.008, .002, .002, m.glow, z), box(.56, .68, -.016, -.006, .002, m.glow, z * 1.18));
+  const wrap = new T.Group(); g.position.x = -.42; wrap.add(g); wrap.rotation.y = Math.PI / 2;
+  wrap.userData.glow = glow;
+  return wrap;
+}
 function buildRange(cv) {
   const T = THREE, r = new T.WebGLRenderer({ canvas: cv, antialias: true });
   T.ColorManagement.legacyMode = false;   // hex colors below are sRGB, like CSS
@@ -1593,20 +1684,18 @@ function buildRange(cv) {
   for (const x of [-21, 21]) { add(new T.BoxGeometry(1, 9, 40), wall, x, 4.5, -8); add(new T.BoxGeometry(1.1, .35, 40), red, x, 1.3, -8); }
   add(new T.BoxGeometry(26, .03, .14), red, 0, .015, -5.2, false);           // the line you shoot from
   for (const x of [-12, -6, 0, 6, 12]) add(new T.BoxGeometry(.08, .02, 16), trim, x, .012, -14, false);
-  [[-7, -8.5, 0], [6, -10, 1], [-2.5, -16, 1], [9, -18, 0], [-10, -20, 1]].forEach(([x, z, light]) => {
-    add(new T.BoxGeometry(1.8, 1.8, 1.8), light ? trim : std(0x4c5b66), x, .9, z);
-  });
+  // Crates are cover: you can't walk through them and they stop bullets.
+  const crates = [[-7, -8.5, 0], [6, -10, 1], [-2.5, -16, 1], [9, -18, 0], [-10, -20, 1], [5, -22, 0], [-6, 5, 1]].map(([x, z, light]) =>
+    add(new T.BoxGeometry(1.8, 1.8, 1.8), light ? trim : std(0x4c5b66), x, .9, z));
   const geo = { body: new T.CapsuleGeometry(.27, .7, 6, 14), head: new T.SphereGeometry(.19, 20, 16), core: new T.BoxGeometry(.18, .12, .05), base: new T.CylinderGeometry(.34, .38, .07, 24) };
   const mat = { body: std(0xc4cbd1, { roughness: .55 }), head: std(0xece8e1, { roughness: .45 }), core: std(0xff4655, { emissive: 0xff4655, emissiveIntensity: 1.4 }),
     base: std(0x2a343c), hit: std(0xff4655, { emissive: 0xff4655, emissiveIntensity: .8 }), tigre: new T.SpriteMaterial({ map: emojiTexture("🐯") }) };
   const bots = new Set(), ray = new T.Raycaster(), look = { yaw: 0, pitch: 0 };
+  const mk = (g, gm, mm, y, part, z = 0) => { const m = new T.Mesh(gm, mm); m.position.set(0, y, z); m.castShadow = true; m.userData.part = part; g.add(m); return m; };
   function spawn(ev, born) {
     const g = new T.Group();
     if (ev.kind === "tigre") { const sp = new T.Sprite(mat.tigre); sp.scale.set(1.5, 1.5, 1); sp.position.y = 1.15; sp.userData.part = "tigre"; g.add(sp); }
-    else {
-      const mk = (gm, mm, y, part, z = 0) => { const m = new T.Mesh(gm, mm); m.position.set(0, y, z); m.castShadow = true; m.userData.part = part; g.add(m); return m; };
-      mk(geo.base, mat.base, .035, "body"); mk(geo.body, mat.body, .74, "body"); mk(geo.core, mat.core, 1.0, "body", .26); mk(geo.head, mat.head, 1.5, "head");
-    }
+    else { mk(g, geo.base, mat.base, .035, "body"); mk(g, geo.body, mat.body, .74, "body"); mk(g, geo.core, mat.core, 1.0, "body", .26); mk(g, geo.head, mat.head, 1.5, "head"); }
     g.position.set(ev.x, 0, ev.z); g.scale.setScalar(.01);
     g.userData = { ev, born, expire: born + ev.life, dead: 0 };
     scene.add(g); bots.add(g); return g;
@@ -1616,36 +1705,44 @@ function buildRange(cv) {
     g.userData.dead = performance.now(); g.userData.how = how;
     if (part === "head") g.children.forEach(c => { if (c.userData.part === "head") c.material = mat.hit; });
   }
+  // The other player in a 1x1: dark body, red core, name over the head. Positions arrive
+  // about 20 times a second and are smoothed here.
+  let foe = null;
+  const foeAt = { x: 0, y: 0, z: -20, yaw: 0 };
+  function addFoe(name) {
+    foe = new T.Group();
+    mk(foe, geo.body, std(0x39444d, { roughness: .5 }), .74, "body"); mk(foe, geo.core, mat.core, 1.0, "body", -.26); mk(foe, geo.head, mat.head, 1.5, "head");
+    const gunBox = new T.Mesh(new T.BoxGeometry(.06, .08, .7), mat.base); gunBox.position.set(.22, 1.05, -.3); foe.add(gunBox);
+    const c = Object.assign(document.createElement("canvas"), { width: 256, height: 64 }), x = c.getContext("2d");
+    x.fillStyle = "rgba(15,25,35,.75)"; x.fillRect(0, 8, 256, 48); x.fillStyle = "#ff4655"; x.fillRect(0, 8, 6, 48);
+    x.font = "700 28px Archivo, sans-serif"; x.fillStyle = "#ece8e1"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(name.slice(0, 16), 131, 33);
+    const tex = new T.CanvasTexture(c); tex.encoding = T.sRGBEncoding;
+    const tag = new T.Sprite(new T.SpriteMaterial({ map: tex })); tag.scale.set(1, .25, 1); tag.position.y = 2.05; foe.add(tag);
+    foe.userData.foe = true; foe.position.set(foeAt.x, 0, foeAt.z); scene.add(foe);
+  }
+  function setFoe(m) { Object.assign(foeAt, { x: +m.x || 0, y: +m.y || 0, z: +m.z || 0, yaw: +m.yaw || 0 }); if (foe) foe.visible = !m.dead; }
   function shoot(nx, ny) {
     ray.setFromCamera({ x: nx, y: ny }, cam);
-    const hit = ray.intersectObjects([...bots].filter(g => !g.userData.dead), true)[0];
-    if (!hit) return null;
-    let g = hit.object; while (g.parent && !g.userData.ev) g = g.parent;
-    return { g, part: hit.object.userData.part, at: hit.point };
+    const live = [...bots].filter(g => !g.userData.dead);
+    if (foe?.visible) live.push(foe);
+    const hit = ray.intersectObjects([...live, ...crates], true)[0];
+    if (!hit || crates.includes(hit.object) || hit.object.isSprite && hit.object.parent === foe) return null;
+    let g = hit.object; while (g.parent && !g.userData.ev && !g.userData.foe) g = g.parent;
+    return { g, part: hit.object.userData.part, at: hit.point, foe: g === foe };
   }
   const screen = v => { const p = v.clone().project(cam); return [(p.x + 1) / 2 * 100, (1 - p.y) / 2 * 100]; };
 
   /* first-person rifle, held by the camera */
   scene.add(cam);
   const gm = {
-    body: new T.MeshStandardMaterial({ roughness: .45, metalness: .5 }),
-    accent: new T.MeshStandardMaterial({ roughness: .3, metalness: .75 }),
+    steel: new T.MeshStandardMaterial({ metalness: .85, roughness: .38 }),
+    mag: new T.MeshStandardMaterial({ metalness: .8, roughness: .45 }),
+    wood: new T.MeshStandardMaterial({ roughness: .55 }),
+    grip: new T.MeshStandardMaterial({ roughness: .5 }),
     glow: new T.MeshStandardMaterial({ emissiveIntensity: 1.8 }),
   };
-  const holder = new T.Group(), boxGun = new T.Group(), HOLD = new T.Vector3(.17, -.18, -.4);
-  const part = (g, mm, x, y, z, rx = 0) => { const p = new T.Mesh(g, mm); p.position.set(x, y, z); p.rotation.x = rx; boxGun.add(p); };
-  const box3 = (w, h, d) => new T.BoxGeometry(w, h, d);
-  part(box3(.07, .09, .42), gm.body, 0, 0, 0);
-  part(box3(.056, .065, .3), gm.accent, 0, .004, -.34);
-  part(new T.CylinderGeometry(.013, .013, .2, 10), gm.body, 0, .012, -.58, Math.PI / 2);
-  part(box3(.03, .03, .05), gm.accent, 0, .012, -.7);
-  part(box3(.055, .13, .065), gm.accent, 0, -.11, -.07, -.28);
-  part(box3(.045, .11, .05), gm.body, 0, -.085, .12, .38);
-  part(box3(.06, .085, .24), gm.accent, 0, -.012, .31);
-  part(box3(.024, .035, .14), gm.body, 0, .065, -.03);
-  part(box3(.074, .014, .4), gm.glow, 0, .028, -.02);
-  part(box3(.01, .03, .26), gm.glow, .03, -.005, -.34);
-  boxGun.scale.setScalar(.8); holder.add(boxGun); holder.position.copy(HOLD); holder.rotation.y = .05; cam.add(holder);
+  const wood = woodTexture(), holder = new T.Group(), rifle = buildAk(T, gm), HOLD = new T.Vector3(.25, -.25, -.56), YAW = .2;
+  holder.add(rifle); holder.position.copy(HOLD); holder.rotation.y = YAW; cam.add(holder);
   const flashTex = (() => {
     const c = Object.assign(document.createElement("canvas"), { width: 64, height: 64 }), x = c.getContext("2d");
     const grad = x.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -1653,27 +1750,15 @@ function buildRange(cv) {
     x.fillStyle = grad; x.fillRect(0, 0, 64, 64); return new T.CanvasTexture(c);
   })();
   const flash = new T.Sprite(new T.SpriteMaterial({ map: flashTex, blending: T.AdditiveBlending, depthWrite: false }));
-  flash.position.set(0, .012, -.76); flash.scale.setScalar(.22); flash.visible = false; holder.add(flash);
+  flash.position.set(0, 0, -.52); flash.scale.setScalar(.2); flash.visible = false; holder.add(flash);
   const flashLight = new T.PointLight(0xffb050, 0, 3); flashLight.position.copy(flash.position); holder.add(flashLight);
-  // The downloaded AK-47 is fitted to the same size and direction as the built-in rifle.
-  let ak = null;
-  function loadAk() {
-    loadGltf().then(() => new T.GLTFLoader().load(AK_URL, gltf => {
-      const m = gltf.scene, size = new T.Box3().setFromObject(m).getSize(new T.Vector3());
-      const long = Math.max(size.x, size.y, size.z);
-      if (size.x === long) m.rotation.y = Math.PI / 2;
-      m.scale.setScalar(.95 / long);
-      const fit = new T.Group(); fit.add(m);
-      const c = new T.Box3().setFromObject(fit).getCenter(new T.Vector3()); m.position.sub(c.multiplyScalar(1 / 1));
-      fit.position.z = -.12;
-      ak = fit; ak.visible = $("gSkin").value === "ak47"; holder.add(ak); boxGun.visible = !ak.visible;
-    }, undefined, () => {})).catch(() => {});
-  }
   function skin(k) {
-    if (k === "ak47") { if (!ak) loadAk(); else { ak.visible = true; boxGun.visible = false; } return; }
-    if (ak) ak.visible = false; boxGun.visible = true;
-    const [, body, accent, glow] = SKINS[k] || SKINS.prime;
-    gm.body.color.setHex(body); gm.accent.color.setHex(accent); gm.glow.color.setHex(glow); gm.glow.emissive.setHex(glow);
+    const [, metal, furniture, glow] = SKINS[k] || SKINS.classica;
+    gm.steel.color.setHex(metal); gm.mag.color.setHex(metal);
+    gm.wood.map = furniture === null ? wood : null; gm.wood.color.setHex(furniture ?? 0xffffff); gm.wood.needsUpdate = true;
+    gm.grip.color.setHex(furniture ?? 0x5a2412);
+    rifle.userData.glow.forEach(m => { m.visible = glow !== null; });
+    if (glow !== null) { gm.glow.color.setHex(glow); gm.glow.emissive.setHex(glow); }
   }
   skin($("gSkin").value);
 
@@ -1681,10 +1766,18 @@ function buildRange(cv) {
   const me = { x: 0, z: 0, y: 0, vx: 0, vz: 0, vy: 0, keys: new Set() };
   const jump = () => { if (me.y === 0) me.vy = 5.2; };
   const speed = () => Math.hypot(me.vx, me.vz) + (me.y > 0 ? 6 : 0);
-  let kick = 0, flashUntil = 0, reloadFrom = 0, last = performance.now(), bob = 0, raf = 0, rafWin = window;
+  let kick = 0, flashUntil = 0, last = performance.now(), bob = 0, raf = 0, rafWin = window;
+  // Spray recoil: the view climbs for the first shots, then wanders sideways, and settles
+  // back once you let go. Bullets go where the view points, so you have to pull down.
+  const rec = { p: 0, y: 0, last: 0 }, bounds = { x0: -19, x1: 19, z0: -5, z1: 10 };
+  function recoil(n) {
+    rec.p = Math.min(.26, rec.p + (n < 7 ? .011 : .003));
+    rec.y += n < 7 ? (Math.random() - .5) * .004 : Math.sin(n * .8) * .011;
+    rec.last = performance.now();
+  }
+  function spawnAt(x, z, yaw) { Object.assign(me, { x, z, vx: 0, vz: 0, y: 0, vy: 0 }); look.yaw = yaw; look.pitch = 0; rec.p = rec.y = 0; }
   function fire() { kick = 1; flashUntil = performance.now() + 45; flash.material.rotation = Math.random() * Math.PI; }
-  function reload() { reloadFrom = performance.now(); }
-  const api = { look, me, spawn, kill, shoot, screen, skin, fire, reload, jump, speed, onTick: null,
+  const api = { look, me, bounds, spawn, kill, shoot, screen, skin, fire, recoil, spawnAt, addFoe, setFoe, jump, speed, onTick: null,
     fovY: () => cam.fov * Math.PI / 180, aspect: () => cam.aspect,
     dispose() { rafWin.cancelAnimationFrame(raf); r.dispose(); r.forceContextLoss(); } };
   function frame() {
@@ -1699,22 +1792,32 @@ function buildRange(cv) {
     }
     const grip = me.y > 0 ? 2 : 14;
     me.vx += (tx - me.vx) * Math.min(1, dt * grip); me.vz += (tz - me.vz) * Math.min(1, dt * grip);
-    me.x = Math.max(-19, Math.min(19, me.x + me.vx * dt)); me.z = Math.max(-5, Math.min(10, me.z + me.vz * dt));
+    me.x = Math.max(bounds.x0, Math.min(bounds.x1, me.x + me.vx * dt)); me.z = Math.max(bounds.z0, Math.min(bounds.z1, me.z + me.vz * dt));
+    for (const c of crates) {
+      const dx = me.x - c.position.x, dz = me.z - c.position.z, reach = .9 + .35;
+      if (Math.abs(dx) < reach && Math.abs(dz) < reach && me.y < 1.8) {
+        if (reach - Math.abs(dx) < reach - Math.abs(dz)) me.x = c.position.x + Math.sign(dx || 1) * reach; else me.z = c.position.z + Math.sign(dz || 1) * reach;
+      }
+    }
     me.vy -= 17 * dt; me.y = Math.max(0, me.y + me.vy * dt); if (me.y === 0) me.vy = Math.max(0, me.vy);
     const run = Math.hypot(me.vx, me.vz); bob += dt * run * 2.1;
     cam.position.set(me.x, 1.6 + me.y + Math.sin(bob * 2) * .025 * Math.min(1, run / 5), me.z);
     kick *= Math.exp(-dt * 16);
-    const rl = reloadFrom ? Math.min(1, (t - reloadFrom) / RELOAD_MS) : 1, dip = Math.sin(Math.PI * rl);
-    if (rl >= 1) reloadFrom = 0;
-    holder.position.set(HOLD.x + Math.sin(bob) * .012, HOLD.y - dip * .22 + Math.abs(Math.cos(bob)) * .01, HOLD.z + kick * .07);
-    holder.rotation.set(kick * .14, .05, dip * .6);
+    holder.position.set(HOLD.x + Math.sin(bob) * .012, HOLD.y + Math.abs(Math.cos(bob)) * .01, HOLD.z + kick * .07);
+    holder.rotation.set(kick * .14, YAW, 0);
+    if (t - rec.last > 140) { const k2 = Math.exp(-dt * 9); rec.p *= k2; rec.y *= k2; }
+    if (foe) {
+      const k3 = Math.min(1, dt * 14);
+      foe.position.x += (foeAt.x - foe.position.x) * k3; foe.position.z += (foeAt.z - foe.position.z) * k3; foe.position.y += (foeAt.y - foe.position.y) * k3;
+      foe.rotation.y = foeAt.yaw;
+    }
     flash.visible = t < flashUntil; flashLight.intensity = flash.visible ? 3 : 0;
     const w = cv.clientWidth, h = cv.clientHeight;
     if (w && h && (cv.width !== Math.round(w * r.getPixelRatio()) || cv.height !== Math.round(h * r.getPixelRatio()))) {
       // Valorant's 103 degrees horizontal field of view, whatever the window's shape.
       r.setSize(w, h, false); cam.aspect = w / h; cam.fov = 2 * Math.atan(Math.tan(103 / 2 * Math.PI / 180) / cam.aspect) * 180 / Math.PI; cam.updateProjectionMatrix();
     }
-    cam.rotation.set(look.pitch, look.yaw, 0);
+    cam.rotation.set(look.pitch + rec.p, look.yaw + rec.y, 0);
     for (const g of bots) {
       const { ev, born, expire, dead, how } = g.userData, age = Math.max(0, t - born) / 1000;
       g.position.x = ev.x + Math.sin(age * ev.sp * Math.PI) * ev.amp;
@@ -1737,57 +1840,51 @@ function startGame() {
   broadcast(m); playGame(m, "me");
 }
 function onGame(m, from) {
-  if (away) return;
+  if (away || invite) return;
   if (game && !game.finished) return;
   playGame(m, from);
   toast(`${nameOf(from)} chamou uma partida de Mira da Tropa.`);
 }
 const show = (id, on) => $(id).classList.toggle("hidden", !on);
-async function playGame(m, from) {
-  closeGame();
-  const g = game = { r: m.r, ammo: MAG, reloading: false, score: 0, shots: 0, hits: 0, heads: 0, burst: 0, lastShot: 0, firing: false,
-    done: false, finished: false, playing: false, timers: [], players: new Map([["me", { s: 0, done: false }]]) };
-  names.forEach((_, id) => awayIds.has(id) || g.players.set(id, { s: 0, done: false }));
-  placeGame();
-  show("game", true); show("gEnd", false); show("gAgain", false); show("gSet", false); $("gGear").setAttribute("aria-pressed", false);
-  $("gTime").textContent = ""; $("feed").replaceChildren();
-  paintBoard();
+function newGame(extra) {
+  endGame();
+  return game = { score: 0, shots: 0, hits: 0, heads: 0, burst: 0, lastShot: 0, firing: false, done: false, finished: false, playing: false,
+    timers: [], players: new Map([["me", { s: 0, done: false }]]), ...extra };
+}
+function openWindow() {
+  placeGame(); show("game", true);
+  ["gEnd", "gAgain", "gSet", "gLobby", "gDead", "gHp"].forEach(id => show(id, false));
+  $("gGear").setAttribute("aria-pressed", false); $("gTime").textContent = ""; $("feed").replaceChildren(); $("gBoard").replaceChildren();
+}
+// Everything both modes share: the window, the 3D range, aiming, spraying and hit effects.
+async function openRange(g) {
+  openWindow(); paintBoard();
   try { await loadThree(); }
-  catch { show("gEnd", true); $("gWin").textContent = "Sem 3D"; $("gMsg").textContent = "Não deu para carregar o 3D. Confere a internet e tenta de novo."; g.finished = g.done = true; sendScore(); return; }
-  if (game !== g) return;
+  catch { show("gEnd", true); $("gWin").textContent = "Sem 3D"; $("gMsg").textContent = "Não deu para carregar o 3D. Confere a internet e tenta de novo."; g.finished = g.done = true; return null; }
+  if (game !== g) return null;
   // A disposed renderer loses its WebGL context for good, so every round gets a new canvas.
   const old = $("gCanvas"), cv = old.ownerDocument.createElement("canvas"); cv.id = "gCanvas"; old.replaceWith(cv);
   const range = g.range = buildRange(cv), box = $("range");
-  const sched = gameSchedule(m.seed), playAt = performance.now() + 3000, endAt = playAt + GAME_MS;
-  let next = 0, lastCount = 0, lastSec = 0;
-  const fx = (text, cls, x, y) => {
+  g.fx = (text, cls, x, y) => {
     const el = box.ownerDocument.createElement("span"); el.className = "pow " + cls; el.textContent = text;
     el.style.left = x + "%"; el.style.top = y + "%"; $("gFx").appendChild(el); setTimeout(() => el.remove(), 700);
   };
-  const feed = (text, cls) => {
+  g.feed = (text, cls) => {
     const el = box.ownerDocument.createElement("span"); el.className = cls; el.textContent = text;
     $("feed").prepend(el); [...$("feed").children].slice(5).forEach(c => c.remove()); setTimeout(() => el.remove(), 2200);
   };
   const locked = () => box.ownerDocument.pointerLockElement === box;
   // One bullet. Moving, jumping and spraying open the cone like in Valorant; standing
-  // still the first shots go exactly where the crosshair is.
+  // still the first shot goes exactly where the crosshair is. The magazine never runs out.
   function shot(nx, ny) {
     const t = performance.now();
     g.burst = t - g.lastShot < 300 ? g.burst + 1 : 0; g.lastShot = t;
-    const v = range.speed(), cone = (v > 6 ? .12 : v > 3 ? .07 : v > 1 ? .025 : 0) + Math.min(g.burst, 9) * .007;
+    const v = range.speed(), cone = (v > 6 ? .12 : v > 3 ? .07 : v > 1 ? .025 : 0) + Math.min(g.burst, 9) * .003;
     const a = Math.random() * Math.PI * 2, d = Math.random() * cone / (range.fovY() / 2);
     g.shots++; sfx("shot"); range.fire();
-    g.ammo--; paintAmmo(); if (!g.ammo) reload();
-    if (g.burst > 2) range.look.pitch = Math.min(1.4, range.look.pitch + .0035);
     const hit = range.shoot(nx + Math.cos(a) * d / range.aspect(), ny + Math.sin(a) * d);
-    if (!hit) return;
-    const pts = PTS[hit.part]; g.score += pts; g.hits += pts > 0; g.heads += hit.part === "head";
-    range.kill(hit.g, hit.part === "tigre" ? "shrink" : "fall", hit.part);
-    const [x, y] = range.screen(hit.at);
-    if (hit.part === "head") { fx("+3", "head", x, y); feed("Headshot +3", "head"); sfx("coins"); }
-    else if (hit.part === "body") { fx("+1", "", x, y); feed("Corpo +1", ""); sfx("punch"); }
-    else { fx("−3", "bad", x, y); feed("O tigrinho cobrou −3", "bad"); sfx("buzz"); box.classList.remove("cobra"); void box.offsetWidth; box.classList.add("cobra"); }
-    sendScore();
+    range.recoil(g.burst);
+    if (hit) g.onHit(hit);
   }
   const aim = e => {
     if (locked()) return [0, 0];
@@ -1795,40 +1892,56 @@ async function playGame(m, from) {
     return [(e.clientX - rc.left) / rc.width * 2 - 1, -((e.clientY - rc.top) / rc.height * 2 - 1)];
   };
   box.onpointerdown = e => {
-    if (e.target.closest("#gSet,#gEnd")) return;
+    if (e.target.closest("#gSet,#gEnd,#gLobby")) return;
     e.preventDefault();
     if (e.pointerType === "mouse" && !locked()) box.requestPointerLock?.({ unadjustedMovement: true })?.catch?.(() => box.requestPointerLock());
     if (e.button === 2) { g.drag = true; return; }
-    if (!g.playing || g.reloading || e.button !== 0) return;
+    if (!g.playing || g.dead || e.button !== 0) return;
     g.firing = locked(); g.nextShot = performance.now() + FIRE_MS;
     shot(...aim(e));
   };
   box.oncontextmenu = e => e.preventDefault();
-  function paintAmmo() { $("ammoN").textContent = g.ammo; show("reloading", g.reloading); }
-  function reload() {
-    if (g.reloading || g.ammo === MAG || !g.playing) return;
-    g.reloading = true; g.firing = false; g.reloadDone = performance.now() + RELOAD_MS; range.reload(); paintAmmo();
-  }
-  g.reload = reload;
-  paintAmmo();
+  // Holding the mouse sprays at a Vandal's fire rate.
+  g.tickShots = t => { if (g.firing && !g.dead && t >= g.nextShot) { g.nextShot = t + FIRE_MS; shot(0, 0); } };
+  return range;
+}
+function countdown(g, t, playAt) {
+  if (g.playing) return true;
+  if (g.done) return false;
+  const n = Math.ceil((playAt - t) / 1000);
+  if (n > 0) { if (n !== g.lastCount) { g.lastCount = n; $("gCount").textContent = n; show("gCount", true); sfx("tick"); } return false; }
+  g.playing = true; show("gCount", false); sfx("tickhi");
+  return true;
+}
+const exitLock = () => { const doc = $("range").ownerDocument; if (doc.pointerLockElement) doc.exitPointerLock(); };
+
+/* the aim race: 30 seconds of bots, the whole room at once */
+async function playGame(m, from) {
+  const g = newGame({ r: m.r });
+  names.forEach((_, id) => awayIds.has(id) || g.players.set(id, { s: 0, done: false }));
+  g.onHit = hit => {
+    if (hit.foe) return;
+    const pts = PTS[hit.part]; g.score += pts; g.hits += pts > 0; g.heads += hit.part === "head";
+    range.kill(hit.g, hit.part === "tigre" ? "shrink" : "fall", hit.part);
+    const [x, y] = range.screen(hit.at);
+    if (hit.part === "head") { g.fx("+3", "head", x, y); g.feed("Headshot +3", "head"); sfx("coins"); }
+    else if (hit.part === "body") { g.fx("+1", "", x, y); g.feed("Corpo +1", ""); sfx("punch"); }
+    else { g.fx("−3", "bad", x, y); g.feed("O tigrinho cobrou −3", "bad"); sfx("buzz"); const box = $("range"); box.classList.remove("cobra"); void box.offsetWidth; box.classList.add("cobra"); }
+    sendScore();
+  };
+  const range = await openRange(g); if (!range) return;
+  const sched = gameSchedule(m.seed), playAt = performance.now() + 3000, endAt = playAt + GAME_MS;
+  let next = 0, lastSec = 0;
   range.onTick = t => {
-    if (!g.playing && !g.done) {
-      const n = Math.ceil((playAt - t) / 1000);
-      if (n > 0) { if (n !== lastCount) { lastCount = n; $("gCount").textContent = n; show("gCount", true); sfx("tick"); } return; }
-      g.playing = true; show("gCount", false); sfx("tickhi");
-    }
-    if (!g.playing) return;
+    if (!countdown(g, t, playAt)) return;
     while (next < sched.length && playAt + sched[next].at <= t) { const ev = sched[next++], born = playAt + ev.at; if (born + ev.life > t) range.spawn(ev, born); }
-    if (g.reloading && t >= g.reloadDone) { g.reloading = false; g.ammo = MAG; paintAmmo(); }
-    // Holding the mouse sprays at a Vandal's fire rate.
-    if (g.firing && !g.reloading && t >= g.nextShot) { g.nextShot = t + FIRE_MS; shot(0, 0); }
+    g.tickShots(t);
     const sec = Math.ceil(Math.max(0, endAt - t) / 1000);
     if (sec !== lastSec) { lastSec = sec; $("gTime").textContent = sec + "s"; }
-    if (t >= endAt) endGame();
+    if (t >= endAt) finishRace();
   };
-  function endGame() {
-    g.done = true; g.playing = false; g.firing = false;
-    if (locked()) box.ownerDocument.exitPointerLock();
+  function finishRace() {
+    g.done = true; g.playing = false; g.firing = false; exitLock();
     const best = Math.max(g.score, +store.get("telao-mira-best") || 0);
     store.set("telao-mira-best", best);
     const acc = g.shots ? Math.round(g.hits / g.shots * 100) : 0;
@@ -1837,6 +1950,109 @@ async function playGame(m, from) {
     sendScore();
     g.timers.push(setTimeout(finishGame, 4000));
   }
+}
+
+/* the 1x1 duel. Both players run the same arena; each sends where they are 20 times a
+   second and the shooter reports hits. Whoever got hit decides about their own death, so
+   the two sides can never disagree about a kill. */
+const HP = 150, DMG = { head: 160, body: 40 }, DUEL_KILLS = 5, SPAWNS = { A: [0, 8, 0], B: [0, -23, Math.PI] };
+let invite = null;
+function lobby(title, buttons) {
+  show("gLobby", true); $("gLobbyTitle").textContent = title;
+  $("gLobbyBtns").replaceChildren(...buttons.map(([label, fn, ghost]) => {
+    const b = $("gLobby").ownerDocument.createElement("button"); b.className = "vbtn" + (ghost ? " ghost" : ""); b.textContent = label; b.onclick = fn; return b;
+  }));
+}
+function duelLobby() {
+  if (away) return toast("Você está no modo ausente.");
+  if (game && !game.finished) return toast("Termina a partida atual primeiro.");
+  endGame(); openWindow();
+  const others = [...names.keys()].filter(id => !awayIds.has(id));
+  if (!others.length) return lobby("Precisa de mais alguém na sala para um 1x1.", [["Fechar", closeGame, true]]);
+  lobby("Quem você quer desafiar?", [...others.map(id => [nameOf(id), () => challenge(id)]), ["Cancelar", closeGame, true]]);
+}
+function challenge(id) {
+  endGame(); openWindow();
+  invite = { d: rand(6), id, role: "A" };
+  sendTo(id, { t: "duel", d: invite.d });
+  lobby(`Esperando ${nameOf(id)} aceitar…`, [["Cancelar", closeGame, true]]);
+}
+function onDuel(m, from) {
+  if (m.t === "duel") {
+    if (away || invite || game && !game.finished) return sendTo(from, { t: "duelno", d: m.d, busy: true });
+    endGame(); openWindow();
+    invite = { d: m.d, id: from, role: "B" };
+    lobby(`${nameOf(from)} te chamou pro 1x1`, [
+      ["Aceitar", () => { sendTo(from, { t: "duelok", d: m.d }); playDuel(invite); }],
+      ["Recusar", closeGame, true]]);
+    sfx("tickhi"); toast(`${nameOf(from)} te chamou pro 1x1.`);
+  }
+  else if (m.t === "duelok" && invite?.d === m.d && invite.id === from) playDuel(invite);
+  else if (m.t === "duelno" && invite?.d === m.d && invite.id === from) { invite = null; lobby(`${nameOf(from)} ${m.busy ? "está ocupado agora" : "recusou"}.`, [["Fechar", closeGame, true]]); }
+  else if (game?.duel && m.d === game.d && from === game.foe) game.onNet(m);
+}
+async function playDuel(inv) {
+  invite = null;
+  const foe = inv.id;
+  const g = newGame({ duel: true, d: inv.d, foe, hp: HP, kills: 0, foeKills: 0 });
+  g.players.set(foe, { s: 0, done: false });
+  g.onHit = hit => {
+    if (!hit.foe || !g.playing || g.dead) return;
+    const head = hit.part === "head"; g.hits++; g.heads += head;
+    sendTo(foe, { t: "dhit", d: g.d, dmg: DMG[head ? "head" : "body"], head });
+    const [x, y] = range.screen(hit.at); g.fx(head ? "−160" : "−40", head ? "head" : "", x, y);
+    sfx(head ? "coins" : "punch");
+  };
+  g.onNet = m => {
+    if (m.t === "dpos") g.range?.setFoe(m);
+    else if (m.t === "dhit") {
+      if (!g.playing || g.dead) return;
+      g.hp -= Math.max(0, Math.min(DMG.head, +m.dmg || 0)); paintHp();
+      const hurt = $("gHurt"); hurt.classList.remove("on"); void hurt.offsetWidth; hurt.classList.add("on");
+      if (g.hp <= 0) die(!!m.head);
+    }
+    else if (m.t === "ddie") { g.kills++; g.feed(`Você eliminou ${nameOf(foe)}${m.head ? " com headshot" : ""}`, m.head ? "head" : ""); sfx("coins"); tally(); }
+    else if (m.t === "dleave") endDuel(`${nameOf(foe)} saiu do duelo.`);
+  };
+  const range = await openRange(g); if (!range) return;
+  range.bounds.z0 = -25;
+  range.addFoe(nameOf(foe));
+  range.spawnAt(...SPAWNS[inv.role]);
+  show("gHp", true); paintHp(); tally();
+  const playAt = performance.now() + 3000;
+  let lastSend = 0;
+  range.onTick = t => {
+    if (t - lastSend > 50) {
+      lastSend = t;
+      const me = range.me, r2 = n => Math.round(n * 100) / 100;
+      sendTo(foe, { t: "dpos", d: g.d, x: r2(me.x), y: r2(me.y), z: r2(me.z), yaw: r2(range.look.yaw), dead: !!g.dead });
+    }
+    if (!countdown(g, t, playAt)) return;
+    if (g.dead && t >= g.respawnAt) { g.dead = false; g.hp = HP; paintHp(); show("gDead", false); range.spawnAt(...SPAWNS[inv.role]); }
+    g.tickShots(t);
+  };
+  function paintHp() { $("gHpN").textContent = Math.max(0, g.hp); $("gHp").style.setProperty("--hp", Math.max(0, g.hp) / HP); }
+  function die(head) {
+    g.dead = true; g.firing = false; g.foeKills++; g.respawnAt = performance.now() + 2500;
+    sendTo(foe, { t: "ddie", d: g.d, head });
+    show("gDead", true); $("gDeadBy").textContent = `${nameOf(foe)} te eliminou${head ? " com headshot" : ""}`;
+    sfx("buzz"); tally();
+  }
+  function tally() {
+    g.players.set("me", { s: g.kills, done: false }); g.players.set(foe, { s: g.foeKills, done: false }); paintBoard();
+    $("gTime").textContent = `${g.kills} x ${g.foeKills}`;
+    if (g.kills >= DUEL_KILLS || g.foeKills >= DUEL_KILLS) endDuel();
+  }
+  function endDuel(msg) {
+    if (g.finished) return;
+    g.finished = g.done = true; g.playing = false; g.firing = false; exitLock(); show("gDead", false);
+    const acc = g.shots ? Math.round(g.hits / g.shots * 100) : 0;
+    show("gEnd", true); show("gAgain", !msg);
+    $("gWin").textContent = msg ? "Duelo encerrado" : g.kills > g.foeKills ? "Vitória" : "Derrota";
+    $("gMsg").textContent = msg || `${g.kills} x ${g.foeKills} contra ${nameOf(foe)}. ${g.heads} headshots, ${acc}% de precisão.`;
+    $("gAgain").textContent = "Revanche";
+  }
+  g.endDuel = endDuel;
 }
 // Mouse and keys are listened to on every document the game window can live in.
 function gameInput(doc) {
@@ -1853,7 +2069,6 @@ function gameInput(doc) {
     const k = e.key.toLowerCase();
     if (["w", "a", "s", "d", "shift"].includes(k)) { g.range.me.keys.add(k); e.preventDefault(); }
     else if (k === " ") { g.range.jump(); e.preventDefault(); }
-    else if (k === "r" && !e.repeat) g.reload?.();
   });
   doc.addEventListener("keyup", e => game?.range?.me.keys.delete(e.key.toLowerCase()));
   doc.defaultView.addEventListener("blur", () => game?.range?.me.keys.clear());
@@ -1924,7 +2139,7 @@ function finishGame() {
   const [[id, p]] = [...game.players].filter(([, p]) => p.done).sort((a, b) => b[1].s - a[1].s);
   $("gWin").textContent = id === "me" ? "Você venceu" : `${nameOf(id)} venceu`;
   $("gMsg").textContent = $("gMsg").textContent.replace(" Esperando a tropa…", "") + ` Venceu com ${p.s} ${Math.abs(p.s) === 1 ? "ponto" : "pontos"}.`;
-  $("gAgain").classList.remove("hidden");
+  $("gAgain").textContent = "Jogar de novo"; $("gAgain").classList.remove("hidden");
   if (id === "me") sfx("coins");
 }
 function paintBoard() {
@@ -1936,20 +2151,28 @@ function paintBoard() {
     return li;
   }));
 }
-// Leaving mid-round counts as done with the score so far, so nobody waits on you.
-function closeGame() {
+// Stops whatever round or invite is running. Leaving an aim race mid-round counts as done
+// with the score so far, and leaving a duel tells the other player, so nobody waits on you.
+function endGame() {
+  if (invite && !game) sendTo(invite.id, { t: "duelno", d: invite.d });
+  invite = null;
   if (!game) return;
-  game.timers.forEach(clearTimeout);
-  if (!game.done) { game.done = true; sendScore(); }
-  game.range?.dispose();
-  const doc = $("range").ownerDocument;
-  if (doc.pointerLockElement) doc.exitPointerLock();
+  const g = game; game = null;
+  g.timers.forEach(clearTimeout);
+  if (g.duel) { if (!g.finished) sendTo(g.foe, { t: "dleave", d: g.d }); }
+  else if (!g.done) { g.done = true; broadcast({ t: "gscore", r: g.r, s: g.score, done: true }); }
+  g.range?.dispose();
+  exitLock();
   $("range").onpointerdown = null; $("gFx").replaceChildren();
-  game = null;
-  $("game").classList.add("hidden");
+}
+function closeGame() {
+  endGame();
+  show("game", false);
   pipWin?.close();
 }
-$("gamePlay").onclick = $("emptyPlay").onclick = $("gAgain").onclick = startGame;
+$("gamePlay").onclick = $("emptyPlay").onclick = startGame;
+$("duelPlay").onclick = duelLobby;
+$("gAgain").onclick = () => game?.duel ? challenge(game.foe) : startGame();
 $("gClose").onclick = closeGame;
 
 /* ---------- tiles ---------- */
