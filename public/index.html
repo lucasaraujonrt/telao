@@ -61,12 +61,6 @@ button:active{transform:translateY(1px)}
 .yes:hover{background:#fff}
 .no{background:var(--rosa);color:#fff}
 .quiet{background:transparent;color:var(--giz);box-shadow:inset 0 0 0 2px var(--noite2)}
-#discordHelp{margin:auto;max-width:min(560px,calc(100% - 32px));border:0;border-radius:10px;padding:20px 22px;background:var(--papel);color:var(--tinta);box-shadow:8px 8px 0 var(--rosa)}
-#discordHelp::backdrop{background:rgba(18,15,56,.7)}
-#discordHelp h2{font:900 30px/1 var(--poster);text-transform:uppercase;margin-bottom:10px}
-#discordHelp ol{padding-left:20px;margin:10px 0;display:grid;gap:6px}
-#discordHelp form{margin-top:14px}
-#discordHelp .yes{background:var(--tinta);color:var(--papel)}
 .quiet:hover{box-shadow:inset 0 0 0 2px var(--giz2)}
 .quiet[aria-pressed=true]{background:var(--rosa);box-shadow:none;color:#fff}
 .note{font-size:13px;color:var(--giz2);max-width:34ch;line-height:1.3}
@@ -339,7 +333,6 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
     <button id="share" class="yes">Mostrar minha tela</button>
     <button id="stop" class="no hidden">Parar de mostrar</button>
     <span id="note" class="note hidden"></span>
-    <button id="discordTip" class="quiet" title="Como mandar o som do jogo sem a call">Tirar a voz do Discord</button>
     <button id="deaf" class="quiet" aria-pressed="false">Mutar tudo</button>
     <button id="away" class="quiet" aria-pressed="false" title="Sem memes, modos, pegadinhas e joguinho para você. As lives continuam com som.">Modo ausente</button>
     <div class="arsenal" role="group" aria-label="Zoeira">
@@ -406,18 +399,6 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
       </form>
     </section>
   </aside>
-  <dialog id="discordHelp">
-    <h2>Som do jogo sem a voz do Discord</h2>
-    <p>O navegador manda o som do dispositivo de saída padrão do Windows. O truque é deixar o Discord tocar direto no fone, fora desse padrão. Faça uma vez e fica salvo:</p>
-    <ol>
-      <li>Instale o VB-Audio Virtual Cable (grátis, em vb-audio.com/Cable) e reinicie o PC.</li>
-      <li>Configurações do Windows › Sistema › Som › Saída: escolha <b>CABLE Input</b>. O jogo passa a tocar no cabo.</li>
-      <li>Para continuar ouvindo o jogo: aperte Win+R, digite <b>mmsys.cpl</b>, aba Gravação › CABLE Output › Propriedades › Escutar. Marque “Escutar este dispositivo” e escolha seu fone.</li>
-      <li>No Discord: Configurações › Voz e vídeo › Dispositivo de saída: escolha o seu fone, não “Padrão”.</li>
-    </ol>
-    <p>Pronto: o Telão manda só o que passa pelo cabo (jogo, música) e a call vai direto para o seu fone. Para desfazer, volte a saída do Windows para o fone.</p>
-    <form method="dialog"><button class="yes">Entendi</button></form>
-  </dialog>
   <div id="toasts" aria-live="polite"></div>
   <div id="comboFx" aria-hidden="true"></div>
   <canvas id="haze" aria-hidden="true"></canvas>
@@ -570,22 +551,22 @@ function start(code) {
     try { stream = await navigator.mediaDevices.getDisplayMedia({
       video: { frameRate: { ideal: 30 } },
       audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, suppressLocalAudioPlayback: false },
-      // The whole PC's audio goes out, game included. That also carries the Discord call;
-      // viewers start muted and pick whose sound they hear.
-      systemAudio: "include",
-      windowAudio: "system",
+      // System audio would carry the Discord call. Only a browser tab's own audio may go out.
+      systemAudio: "exclude",
       selfBrowserSurface: "exclude",
     }); }
     catch { hubConn?.send({ t: "stop" }); return; }
     const t = stream.getVideoTracks()[0];
-    note(stream.getAudioTracks().length ? "Mandando a tela com o som do PC (a voz do Discord vai junto)."
-      : "Sem som: compartilhe a tela inteira e marque “Compartilhar áudio do sistema” no seletor.");
+    const tabAudio = t.getSettings().displaySurface === "browser";
+    if (!tabAudio) stream.getAudioTracks().forEach(a => { a.stop(); stream.removeTrack(a); });
+    note(stream.getAudioTracks().length ? "Mandando a tela com o som desta aba."
+      : tabAudio ? "Sem som: marque “Compartilhar áudio da guia” no seletor."
+      : "Sem som: tela e janela vão mudas para o Discord não vazar. Para ter som, compartilhe uma aba.");
     t.contentHint = "detail"; t.onended = stop;
     $("share").classList.add("hidden"); $("stop").classList.remove("hidden");
     addTile("me", stream);
     conns.forEach((_, id) => callPeer(id));
   }
-  $("discordTip").onclick = () => $("discordHelp").showModal();
   function note(msg) { $("note").textContent = msg; $("note").classList.toggle("hidden", !msg); }
   $("stop").onclick = stop;
   function stop() {
