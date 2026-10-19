@@ -258,7 +258,7 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
 .meme kbd{font:700 11px/1 Archivo,sans-serif;background:var(--papel);color:var(--tinta);border-radius:3px;padding:2px 4px;margin-left:6px;vertical-align:1px}
 .meme.picked{box-shadow:inset 0 0 0 2px var(--rosa)}
 .combo{padding:12px 4px 0;display:grid;gap:8px}
-.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:0 4px}
+.modes{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;padding:0 4px}
 .mode{display:grid;justify-items:center;gap:2px;padding:10px 4px 8px;border-radius:8px;font:900 18px/1 var(--poster);text-transform:uppercase;color:var(--tinta);position:relative}
 .mode span{font-size:26px;line-height:1.1}
 .mode kbd{font:700 10px/1 Archivo,sans-serif;opacity:.6}
@@ -350,6 +350,54 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
   #side{border-left:0;border-top:2px solid var(--noite2);max-height:34dvh}
   .logo{font-size:24px}
 }
+#cameraEffects,#cameraMirrorLabel{font-size:13px;display:flex;align-items:center;gap:6px;color:var(--giz)}
+#cameraEffect{background:var(--noite2);color:var(--giz);border:1px solid var(--giz2);border-radius:6px;padding:7px;font:inherit}
+#cameraFloat{position:fixed;right:16px;bottom:16px;z-index:9;width:230px;max-width:calc(100vw - 24px);max-height:70dvh;min-width:160px;min-height:110px;resize:both;display:flex;flex-direction:column;background:var(--noite);border:1px solid var(--line,var(--giz2));border-radius:12px;box-shadow:0 12px 40px #0008;overflow:hidden}
+#cameraFloat:has(#cameraTiles:empty){display:none}
+#cameraDrag{display:block;width:100%;border-radius:0;padding:9px 12px;text-align:left;font-size:13px;background:var(--tinta);color:var(--giz);cursor:grab;touch-action:none;flex:none}
+#cameraTiles{display:grid;flex:1;min-height:0;gap:6px;padding:6px;overflow:auto;max-height:calc(70dvh - 40px)}
+#cameraTiles .tile[data-camera]{height:auto;aspect-ratio:4/3;min-height:0;border-radius:8px;cursor:default;flex:none;outline:none}
+#cameraTiles .tile[data-camera] video{object-fit:contain}
+#cameraTiles .tile .name{font-size:13px;padding:4px 6px;max-width:75%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cameraTiles .tile .ctl{display:flex;opacity:1}
+#cameraTiles .tile:fullscreen{width:100%;height:100%;aspect-ratio:auto}
+.mode.aura{background:linear-gradient(145deg,#b4fff0,#b695ff 60%,#6438b8);color:#170c38}
+#room.aura #haze{opacity:1}
+#room.aura #grid{filter:saturate(.45) contrast(1.12)}
+.aura-scene{position:absolute;inset:0;display:grid;place-items:center;isolation:isolate;overflow:hidden;background:radial-gradient(ellipse at 50% 65%,#39106255,transparent 65%);color:#edfff9}
+.aura-figure{position:absolute;bottom:5%;height:70%;width:45%;display:grid;place-items:center;filter:drop-shadow(0 0 18px #67ffd4);opacity:.75;transition:filter 1s,opacity 1s}
+.aura-figure svg{height:100%;max-width:100%;fill:#100c24;stroke:#a5ffe7;stroke-width:1.2;filter:drop-shadow(0 0 25px #a86aff)}
+.aura-caption{position:absolute;inset:12% 12% auto;text-align:center;text-shadow:0 3px 25px #000}
+.aura-eyebrow{font:700 11px Archivo,sans-serif;text-transform:uppercase;letter-spacing:.25em;color:#b4fff0}
+.aura-caption h2,.aura-result h2{font:900 clamp(44px,9vw,112px)/.86 var(--poster);letter-spacing:-.02em;margin:14px 0;text-transform:uppercase}
+.aura-caption p{font-size:15px;color:#ddf9ee}
+.aura-meter{height:4px;width:min(260px,60vw);background:#b2ffe433;margin:22px auto}
+.aura-meter i{display:block;width:0;height:100%;background:#b2ffe4;box-shadow:0 0 18px #73ffd0;animation:aura-charge 3.5s ease-in forwards}
+.aura-orbit{position:absolute;width:70vmin;height:70vmin;border:1px solid #b2ffe455;border-radius:50%;box-shadow:inset 0 0 40px #965dff22,0 0 40px #965dff22;animation:aura-orbit 9s linear infinite;transform:rotateX(65deg) rotateZ(-20deg)}
+.aura-orbit-two{width:95vmin;height:95vmin;animation-direction:reverse;opacity:.5}
+.aura-spark{position:absolute;left:var(--x);bottom:-5%;width:2px;height:24px;background:linear-gradient(transparent,#b5ffe4);animation:aura-rise var(--speed) var(--delay) linear infinite}
+.aura-awakened .aura-figure{filter:drop-shadow(0 0 50px #a470ff);opacity:1}
+.aura-shock{position:absolute;width:20vmin;height:20vmin;border:2px solid #baffea;border-radius:50%;animation:aura-shock 1.7s ease-out both;box-shadow:0 0 20px #8bffdb}
+.aura-revealed .aura-caption{display:none}
+.aura-revealed .aura-figure{opacity:.2}
+.aura-result{text-align:center;z-index:1;width:min(540px,86vw);padding:24px;border:1px solid #b5ffe455;background:linear-gradient(150deg,#130e2cf2,#241240ed);box-shadow:0 0 100px #8053ff44;border-radius:4px;max-height:85dvh;overflow:hidden}
+.aura-result[hidden]{display:none}
+.aura-result h2{font-size:clamp(32px,6vw,72px);overflow-wrap:anywhere}
+.aura-result strong{font:900 clamp(28px,5vw,58px)/1 var(--poster);color:#aaffdc;text-shadow:0 0 30px #6affc477}
+.aura-result p{color:#d1b6ff;font-weight:700;margin:8px 0 20px}
+.aura-result ol{padding:0;list-style:none;display:grid;gap:5px;text-align:left}
+.aura-result li{display:flex;justify-content:space-between;gap:10px;padding:6px 10px;background:#ffffff08;font-size:13px}
+.aura-result li:first-child{background:#b2ffe41a;color:#b2ffe4}
+.aura-result li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.aura-result small{display:block;margin-top:16px;color:#b8a7c9;font-size:11px}
+@keyframes aura-charge{to{width:100%}}
+@keyframes aura-rise{to{translate:0 -110vh;opacity:0}}
+@keyframes aura-orbit{to{transform:rotateX(65deg) rotateZ(340deg)}}
+@keyframes aura-shock{from{scale:.1;opacity:1}to{scale:10;opacity:0}}
+.aura-reduced .aura-orbit,.aura-reduced .aura-meter i{animation:none}
+.aura-reduced .aura-meter i{width:100%}
+@media(prefers-reduced-motion:reduce){.aura-scene *{animation:none!important;transition:none!important}}
+
 </style>
 </head>
 <body>
@@ -372,6 +420,9 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
     <div class="link"><span id="url"></span><button id="copy">Copiar link</button></div>
     <button id="share" class="yes">Mostrar minha tela</button>
     <button id="stop" class="no hidden">Parar de mostrar</button>
+    <button id="camera" class="quiet" aria-pressed="false">Ligar câmera</button>
+    <label id="cameraEffects" class="hidden">Efeito <select id="cameraEffect" aria-label="Efeito da câmera"><option value="normal">Normal</option><option value="mono">Cinema P&amp;B</option><option value="vhs">VHS da tropa</option><option value="neon">Neon</option><option value="pixel">Pixelado</option></select></label>
+    <label id="cameraMirrorLabel" class="hidden"><input id="cameraMirror" type="checkbox" checked> Espelhar</label>
     <span id="note" class="note hidden"></span>
     <button id="deaf" class="quiet" aria-pressed="false">Mutar tudo</button>
     <button id="away" class="quiet" aria-pressed="false" title="Sem memes, modos, pegadinhas e joguinho para você. As lives continuam com som.">Modo ausente</button>
@@ -399,6 +450,7 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
         <button class="mode pod" data-mode="pod"><span>💨</span>Pod<kbd>P</kbd></button>
         <button class="mode weed" data-mode="weed"><span>🌿</span>4:20<kbd>M</kbd></button>
         <button class="mode tiger" data-mode="tiger"><span>🐯</span>Tigrinho<kbd>G</kbd></button>
+        <button class="mode aura" data-mode="aura"><span>✦</span>Aura<kbd>U</kbd></button>
       </div>
     </section>
     <section class="board">
@@ -460,6 +512,7 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
       </form>
     </div>
   </section>
+  <aside id="cameraFloat" aria-label="Câmeras flutuantes"><button id="cameraDrag" type="button" aria-label="Arrastar câmeras">Câmeras · arraste para mover</button><div id="cameraTiles"></div></aside>
   <div id="toasts" aria-live="polite"></div>
   <div id="comboFx" aria-hidden="true"></div>
   <canvas id="haze" aria-hidden="true"></canvas>
@@ -470,10 +523,12 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
   </svg>
 </div>
 
+<script src="aura-mode.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 // The game window can move into a Picture-in-Picture document; look there too.
 let pipWin = null;
+let updateCaptureBusy = () => false;
 const $ = id => document.getElementById(id) || pipWin?.document.getElementById(id);
 const ALPHA = "abcdefghjkmnpqrstuvwxyz23456789";
 const PREFIX = "telao-", MAX = 4;
@@ -517,11 +572,15 @@ function start(code) {
   const hubId = PREFIX + code;
   const peer = new Peer();
   const conns = new Map();     // peerId -> DataConnection (member mesh)
+  const cameraCalls = new Map(), incomingCameras = new Map(), stoppedCameras = new Map();
+  let cameraSession = 0, cameraCancelled = 0;
+  updateCaptureBusy = () => !!stream || !!cameraRaw || cameraPending || $("share").disabled;
+  let cameraStream = null, cameraRaw = null, cameraTimer = null, cameraVideo = null, cameraPending = false;
   const calls = new Map();     // peerId -> outgoing MediaConnection
   let stream = null, myId = null, hub = null, hubConn = null, claiming = false;
 
   peer.on("open", id => { myId = id; enterRoom(code); joinHub(); render(); });
-  addEventListener("pagehide", () => { hub?.peer.destroy(); peer.destroy(); });
+  addEventListener("pagehide", () => { stopCamera(); hub?.peer.destroy(); peer.destroy(); });
   window.telaoDebug = () => ({ me: myId, hosting: !!hub, claiming, hubOpen: !!hubConn?.open, members: [...conns.keys()], directory: hub && [...hub.conns.keys()] });
   peer.on("disconnected", () => peer.destroyed || peer.reconnect());
   peer.on("error", e => {
@@ -530,9 +589,17 @@ function start(code) {
   });
   peer.on("connection", c => wire(c));
   peer.on("call", call => {
+    const camera = call.metadata?.kind === "camera";
+    const id = camera ? call.peer + ":camera" : call.peer;
+    if (camera) {
+      const session = call.metadata.session;
+      const previous = incomingCameras.get(call.peer);
+      if (!Number.isSafeInteger(session) || session <= (stoppedCameras.get(call.peer) || 0) || session < (previous?.metadata.session || 0)) { call.close(); return; }
+      incomingCameras.set(call.peer, call); previous?.close();
+    }
     call.answer();
-    call.on("stream", s => addTile(call.peer, s));
-    call.on("close", () => dropTile(call.peer));
+    call.on("stream", s => { if (!camera || incomingCameras.get(call.peer) === call) addTile(id, s); });
+    call.on("close", () => { if (!camera || incomingCameras.get(call.peer) === call) { if (camera) incomingCameras.delete(call.peer); dropTile(id); } });
   });
 
   /* ---------- room directory ---------- */
@@ -581,22 +648,28 @@ function start(code) {
       conns.set(c.peer, c);
       c.send(hello());
       if (stream) callPeer(c.peer);
+      if (cameraStream) callCamera(c.peer);
       render();
     });
     c.on("data", m => {
       if (m.t === "hello") { names.set(c.peer, String(m.name).slice(0, 24)); notifOk.set(c.peer, m.notif === true); m.away === true ? awayIds.add(c.peer) : awayIds.delete(c.peer); render(); }
       else if (m.t === "troll") onTroll(m, c.peer);
       else if (m.t === "stop") dropTile(c.peer);
+      else if (m.t === "camera-stop" && Number.isSafeInteger(m.session)) {
+        stoppedCameras.set(c.peer, Math.max(stoppedCameras.get(c.peer) || 0, m.session));
+        const current = incomingCameras.get(c.peer);
+        if (current && current.metadata.session <= m.session) { current.close(); incomingCameras.delete(c.peer); dropTile(c.peer + ":camera"); }
+      }
       else if (m.t === "meme") playMeme(m.k, c.peer, m.label);
       else if (m.t === "combo") playCombo(m.ks, c.peer);
       else if (m.t === "react") showReact(fromWire(m.target), m.e, c.peer);
       else if (m.t === "throw") landThrow(fromWire(m.target), m.item, m.x, m.y, c.peer);
-      else if (m.t === "mode") startMode(m.mode, m.track, c.peer, m.reels, m.cobra);
+      else if (m.t === "mode") startMode(m.mode, m.track, c.peer, m.reels, m.cobra, m.aura);
       else if (m.t === "game") onGame(m, c.peer);
       else if (m.t === "gscore") onScore(m, c.peer);
       else if (["duel", "duelok", "duelno", "dpos", "dshot", "dhit", "ddie", "dleave"].includes(m.t)) onDuel(m, c.peer);
     });
-    c.on("close", () => { conns.delete(c.peer); calls.delete(c.peer); names.delete(c.peer); awayIds.delete(c.peer); dropTile(c.peer);
+    c.on("close", () => { if (conns.get(c.peer) !== c) return; conns.delete(c.peer); calls.delete(c.peer); cameraCalls.get(c.peer)?.close(); cameraCalls.delete(c.peer); incomingCameras.get(c.peer)?.close(); incomingCameras.delete(c.peer); dropTile(c.peer + ":camera"); names.delete(c.peer); awayIds.delete(c.peer); dropTile(c.peer);
       if (game?.duel && game.foe === c.peer) game.endDuel?.(`${nameOf(c.peer)} saiu da sala.`);
       if (invite?.id === c.peer) { invite = null; lobby("A pessoa saiu da sala.", [["Fechar", closeGame, true]]); } });
   }
@@ -612,8 +685,68 @@ function start(code) {
     }), 500);
   }
 
+  function callCamera(id) {
+    if (!cameraStream) return;
+    cameraCalls.get(id)?.close();
+    const call = peer.call(id, cameraStream, { metadata: { kind: "camera", session: cameraSession } });
+    cameraCalls.set(id, call);
+  }
+  function stopCamera() {
+    cameraCancelled++;
+    clearInterval(cameraTimer); cameraTimer = null;
+    cameraVideo?.pause(); if (cameraVideo) cameraVideo.srcObject = null; cameraVideo = null;
+    cameraRaw?.getTracks().forEach(t => t.stop()); cameraRaw = null;
+    cameraStream?.getTracks().forEach(t => t.stop()); cameraStream = null;
+    cameraCalls.forEach(c => c.close()); cameraCalls.clear();
+    conns.forEach(c => { if (c.open) c.send({ t: "camera-stop", session: cameraSession }); });
+    dropTile("me:camera");
+    $("camera").textContent = "Ligar câmera"; $("camera").setAttribute("aria-pressed", "false");
+    $("cameraEffects").classList.add("hidden"); $("cameraMirrorLabel").classList.add("hidden");
+  }
+  $("camera").onclick = async () => {
+    if (cameraPending) return;
+    if (cameraStream) return stopCamera();
+    cameraPending = true; $("camera").disabled = true;
+    const request = cameraCancelled;
+    try {
+      const raw = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24, max: 30 } }, audio: false });
+      if (request !== cameraCancelled || peer.destroyed) { raw.getTracks().forEach(t => t.stop()); return; }
+      cameraRaw = raw; cameraSession++;
+      cameraVideo = document.createElement("video"); cameraVideo.muted = true; cameraVideo.playsInline = true; cameraVideo.srcObject = cameraRaw;
+      await cameraVideo.play();
+      if (request !== cameraCancelled || peer.destroyed) return;
+      const canvas = document.createElement("canvas"); canvas.width = 640; canvas.height = 480;
+      const ctx = canvas.getContext("2d"), small = document.createElement("canvas"); small.width = 80; small.height = 60;
+      const tiny = small.getContext("2d");
+      const draw = () => {
+        if (!cameraVideo) return;
+        const effect = $("cameraEffect").value;
+        ctx.save(); ctx.clearRect(0, 0, 640, 480);
+        if ($("cameraMirror").checked) { ctx.translate(640, 0); ctx.scale(-1, 1); }
+        ctx.filter = effect === "mono" ? "grayscale(1) contrast(1.2)" : effect === "vhs" ? "sepia(.4) saturate(1.5) contrast(1.1)" : effect === "neon" ? "hue-rotate(275deg) saturate(2.8) contrast(1.3)" : "none";
+        if (effect === "pixel") { tiny.drawImage(cameraVideo, 0, 0, 80, 60); ctx.imageSmoothingEnabled = false; ctx.drawImage(small, 0, 0, 640, 480); }
+        else ctx.drawImage(cameraVideo, 0, 0, 640, 480);
+        ctx.restore();
+        if (effect === "vhs") {
+          ctx.fillStyle = "rgba(0,0,0,.18)"; for (let y = 0; y < 480; y += 4) ctx.fillRect(0, y, 640, 1);
+          ctx.fillStyle = "white"; ctx.font = "bold 20px monospace"; ctx.fillText("REC ● TROPA CAM", 20, 32);
+        }
+      };
+      draw(); cameraTimer = setInterval(draw, 1000 / 24);
+      cameraStream = canvas.captureStream(24);
+      cameraRaw.getVideoTracks()[0].onended = stopCamera;
+      addTile("me:camera", cameraStream); conns.forEach((_, id) => callCamera(id));
+      $("camera").textContent = "Desligar câmera"; $("camera").setAttribute("aria-pressed", "true");
+      $("cameraEffects").classList.remove("hidden"); $("cameraMirrorLabel").classList.remove("hidden");
+    } catch (e) {
+      stopCamera();
+      toast(e.name === "NotAllowedError" ? "Autorize a câmera no navegador para ligar." : e.name === "NotFoundError" ? "Nenhuma câmera encontrada." : "Não foi possível ligar a câmera. Confira se outro aplicativo está usando ela.");
+    } finally { cameraPending = false; $("camera").disabled = false; }
+  };
+
   $("share").onclick = () => hubConn?.open ? hubConn.send({ t: "want" }) : alert("Ainda conectando na sala. Tenta de novo em um segundo.");
   async function begin() {
+    $("share").disabled = true;
     try { stream = await navigator.mediaDevices.getDisplayMedia({
       video: { frameRate: { ideal: 30 } },
       audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, suppressLocalAudioPlayback: false },
@@ -623,7 +756,8 @@ function start(code) {
       windowAudio: "window",
       selfBrowserSurface: "exclude",
     }); }
-    catch { hubConn?.send({ t: "stop" }); return; }
+    catch { $("share").disabled = false; hubConn?.send({ t: "stop" }); return; }
+    $("share").disabled = false;
     const t = stream.getVideoTracks()[0];
     const surface = t.getSettings().displaySurface;
     if (surface === "monitor") stream.getAudioTracks().forEach(a => { a.stop(); stream.removeTrack(a); });
@@ -657,17 +791,19 @@ function start(code) {
   broadcast = msg => conns.forEach(c => c.open && c.send(msg));
   sendTo = (id, msg) => { const c = conns.get(id); if (c?.open) c.send(msg); };
   announce = () => broadcast(hello());
-  toWire = id => id === "me" ? myId : id;
-  fromWire = id => id === myId ? "me" : id;
-  nameOf = id => id === "me" ? myName : names.get(id) || "alguém";
+  toWire = id => id === "me" ? myId : id === "me:camera" ? myId + ":camera" : id;
+  fromWire = id => id === myId ? "me" : id === myId + ":camera" ? "me:camera" : id;
+  nameOf = id => { const owner = id?.replace(/:camera$/, ""); return owner === "me" ? myName : names.get(owner) || "alguém"; };
   render = () => {
     const people = [{ id: "me", name: myName, me: true }, ...[...conns.keys()].map(id => ({ id, name: names.get(id) || "conectando…" }))];
-    const live = document.querySelectorAll(".tile").length;
-    $("count").textContent = `${people.length} ${people.length === 1 ? "pessoa" : "pessoas"}, ${live} de ${MAX} telas ao vivo`;
+    const live = document.querySelectorAll(".tile:not([data-camera])").length;
+    const cameras = document.querySelectorAll(".tile[data-camera]").length;
+    $("count").textContent = `${people.length} ${people.length === 1 ? "pessoa" : "pessoas"}, ${live} de ${MAX} telas ao vivo · ${cameras} câmeras`;
     const box = $("members"); box.replaceChildren();
     for (const p of people) box.appendChild(member(p));
     document.querySelectorAll(".tile").forEach(t => {
-      t.querySelector(".name").textContent = t.dataset.id === "me" ? `${myName} (você)` : names.get(t.dataset.id) || "conectando…";
+      const owner = t.dataset.id.replace(/:camera$/, "");
+      t.querySelector(".name").textContent = (owner === "me" ? `${myName} (você)` : names.get(owner) || "conectando…") + (t.hasAttribute("data-camera") ? " · câmera" : " · tela");
     });
   };
 }
@@ -707,7 +843,7 @@ const isMuted = id => audio.deaf || audio.muted.get(id) !== false;
 function apply(id) {
   const t = tileOf(id); if (!t) return;
   const v = t.querySelector("video");
-  if (id === "me") { v.muted = true; return; }
+  if (id === "me" || id.endsWith(":camera")) { v.muted = true; return; }
   const muted = isMuted(id);
   v.muted = muted; v.volume = audio.vol.get(id) ?? 1;
   const ctl = t.querySelector(".ctl");
@@ -736,6 +872,7 @@ function color(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0))
 function member(p) {
   const el = document.createElement("div"); el.className = "m";
   const live = !!tileOf(p.id);
+  const camera = !!tileOf(p.id + ":camera");
   const av = document.createElement("div"); av.className = "av"; av.style.background = color(p.name); av.textContent = (p.name[0] || "?").toUpperCase();
   const who = document.createElement("div"); who.className = "who";
   const b = document.createElement("b"); b.textContent = p.name; who.append(b);
@@ -751,7 +888,8 @@ function member(p) {
   }
   el.append(av, who);
   const badge = document.createElement("span");
-  if (live) { badge.className = "live"; badge.textContent = "ao vivo"; }
+  if (live) { badge.className = "live"; badge.textContent = camera ? "tela + câmera" : "ao vivo"; }
+  else if (camera) { badge.className = "live"; badge.textContent = "câmera"; }
   else if (p.me ? away : awayIds.has(p.id)) { badge.className = "away"; badge.textContent = "ausente"; }
   el.append(badge);
   const h = hits.get(p.id);
@@ -1221,6 +1359,7 @@ const MODES = {
   pod: { title: "Modo pod", tracks: ["ymca", "barbie-girl-in-a-barbie-world", "gloria-gaynor-i-will-survive-mp3cut"] },
   weed: { title: "Modo 4:20", tracks: ["smoke_weed_everyday_song"], intro: "snoop-dogg-smoke-weed-everyday" },
   tiger: { title: "Modo tigrinho", tracks: ["solta-a-carta-tigrinho"] },
+  aura: { title: "Modo aura", tracks: ["auraa"] },
 };
 const SLOTS = ["🐯", "🧧", "💰", "🍊", "🔔"];
 const MODE_MS = 15000;
@@ -1234,12 +1373,14 @@ function fireMode(name) {
   // The sender rolls the slot so everyone sees the same result. Mostly you lose, like the real thing.
   const reels = Math.random() < .2 ? [0, 0, 0] : (() => { let r; do r = [0, 1, 2].map(() => Math.floor(Math.random() * SLOTS.length)); while (r[0] === r[1] && r[1] === r[2]); return r; })();
   const msg = { t: "mode", mode: name, track, reels };
+  if (name === "aura") msg.aura = TelaoAura.roll(crypto.getRandomValues(new Uint32Array(1))[0], [myName, ...names.values()].sort());
   // Every third loss the tiger comes to collect. Everyone in the room counts the same losses.
   if (name === "tiger" && !reels.every(r => r === 0) && (tigerLosses + 1) % 3 === 0) msg.cobra = Math.floor(Math.random() * 1e9);
   broadcast(msg);
-  startMode(name, track, "me", reels, msg.cobra);
+  startMode(name, track, "me", reels, msg.cobra, msg.aura);
 }
-function startMode(name, track, from, reels, cobra) {
+let stopAura = null, modeTimer = null;
+function startMode(name, track, from, reels, cobra, auraResult) {
   if (away) return;
   const m = MODES[name]; if (!m || !m.tracks.includes(track) || mode) return;
   const now = Date.now();
@@ -1256,18 +1397,20 @@ function startMode(name, track, from, reels, cobra) {
   if (!audio.deaf && memeVol > 0) {
     const play = (k, at) => setTimeout(() => {
       if (mode !== name) return;
-      const a = new Audio(memeUrl(k)); a.volume = memeVol; a.loop = !m.intro || k !== m.intro;
+      const a = new Audio(memeUrl(k)); a.volume = memeVol; a.loop = name !== "aura" && (!m.intro || k !== m.intro);
       modeAudio.push(a); a.play().catch(() => toast("Clique em qualquer lugar para ouvir."));
     }, at);
     if (m.intro) { play(m.intro, 0); play(track, 2600); } else play(track, 0);
   }
-  haze.start({ pod: 0, weed: 1, tiger: 2 }[name]);
+  if (name !== "aura" || !matchMedia("(prefers-reduced-motion: reduce)").matches) haze.start({ pod: 0, weed: 1, tiger: 2, aura: 3 }[name]);
   if (name === "tiger" && Array.isArray(reels) && !reels.every(r => r === 0)) tigerLosses++;
-  props(name, reels, Number.isInteger(cobra) ? cobra : null);
-  setTimeout(stopMode, MODE_MS);
+  props(name, reels, Number.isInteger(cobra) ? cobra : null, auraResult);
+  modeTimer = setTimeout(stopMode, MODE_MS);
 }
 function stopMode() {
   if (!mode) return;
+  clearTimeout(modeTimer); modeTimer = null;
+  stopAura?.(); stopAura = null;
   unsuck();
   $("room").classList.remove(mode);
   modeAudio.forEach(a => { const fade = setInterval(() => { a.volume = Math.max(0, a.volume - .08); if (!a.volume) { a.pause(); clearInterval(fade); } }, 80); });
@@ -1280,10 +1423,12 @@ function stopMode() {
 
 // Pod mode: a giant pod hits to the beat while more pods fly across the room.
 // 4:20 mode: Snoop Dogg dances in from the sides.
-function props(name, reels, cobra) {
+function props(name, reels, cobra, auraResult) {
   const box = $("modeFx"); box.replaceChildren(); box.classList.remove("out");
   const img = (src, cls) => { const i = new Image(); i.src = src; i.className = cls; i.alt = ""; box.append(i); return i; };
-  if (name === "pod") {
+  if (name === "aura") {
+    stopAura = TelaoAura.start(box, auraResult);
+  } else if (name === "pod") {
     img("img/pod.webp", "pod-boss").animate([{ opacity: 0, scale: .2 }, { opacity: 1, scale: 1 }], { duration: 600, easing: "cubic-bezier(.2,1.6,.4,1)" });
     const fly = () => {
       if (mode !== "pod") return;
@@ -1436,7 +1581,17 @@ float smoke(vec2 p,float t){
 }
 void main(){
   vec2 uv=gl_FragCoord.xy/res;float asp=res.x/res.y;vec2 p=vec2(uv.x*asp,uv.y);
-  if(kind>1.5){
+  if(kind>2.5){
+    vec2 d=p-vec2(.5*asp,.46); float r=length(d),a=atan(d.y,d.x);
+    float charge=smoothstep(0.,3.5,t);
+    float wisps=fbm(vec2(a*2.+t*.12,r*6.-t*.8));
+    float crown=pow(max(0.,1.-abs(r-(.28+wisps*.18))*5.),2.);
+    float rays=pow(max(0.,sin(a*11.+wisps*5.-t*.35)),10.)*exp(-r*1.4);
+    vec3 col=mix(vec3(.3,.9,.72),vec3(.52,.18,1.),.5+.5*sin(a*2.+t*.5));
+    col+=vec3(.4,.6,.5)*crown;
+    float edges=smoothstep(.3,1.,r);
+    gl_FragColor=vec4(col,clamp((crown*.45+rays*.4)*charge+edges*.28,0.,.75)*amt);
+  }else if(kind>1.5){
     vec2 c=vec2(.5*asp,.5),d=p-c;
     float ang=atan(d.y,d.x),r=length(d);
     float rays=smoothstep(.2,.9,sin(ang*14.+t*1.4))*smoothstep(1.2,.1,r);
@@ -1523,15 +1678,15 @@ function theater(on, id) {
   layout();
 }
 function layout() {
-  const tiles = [...document.querySelectorAll(".tile")];
-  if (!tileOf(view.focus)) view.focus = tiles.find(t => t.dataset.id !== "me")?.dataset.id || tiles[0]?.dataset.id || null;
+  const tiles = [...document.querySelectorAll("#grid .tile")];
+  if (!tiles.some(t => t.dataset.id === view.focus)) view.focus = tiles.find(t => t.dataset.id !== "me")?.dataset.id || tiles[0]?.dataset.id || null;
   tiles.forEach(t => t.classList.toggle("focus", view.theater && t.dataset.id === view.focus));
   $("room").classList.toggle("solo", tiles.length <= 1);
 }
 function fullscreen(t) { document.fullscreenElement ? document.exitFullscreen() : t.requestFullscreen(); }
 $("theater").onclick = () => theater(!view.theater);
 addEventListener("keydown", e => {
-  if (e.target.matches?.("input[type=text]") || $("room").classList.contains("hidden")) return;
+  if (e.target.matches?.("input,select,textarea,[contenteditable=true]") || $("room").classList.contains("hidden")) return;
   if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
   const k = e.key.toLowerCase();
   if (k === "escape") { if (!$("trollPop").classList.contains("hidden")) closeTroll(); else if (game && Date.now() - unlockedAt > 400) closeGame(); else if (armed) arm(null); else if (view.theater && !document.fullscreenElement) theater(false); return; }
@@ -1544,6 +1699,7 @@ addEventListener("keydown", e => {
   else if (k === "p") fireMode("pod");
   else if (k === "m") fireMode("weed");
   else if (k === "g") fireMode("tiger");
+  else if (k === "u") fireMode("aura");
   else if (k === "t") theater(!view.theater);
   else if (k === "j") startGame();
 });
@@ -2344,19 +2500,51 @@ $("gAgain").onclick = () => game?.duel ? challenge(game.foe) : startGame();
 $("gClose").onclick = closeGame;
 
 /* ---------- tiles ---------- */
+function clampCameraFloat() {
+  const panel = $("cameraFloat");
+  if (!panel.style.left || !$("cameraTiles").children.length) return;
+  const r = panel.getBoundingClientRect();
+  panel.style.left = Math.max(8, Math.min(r.left, innerWidth - r.width - 8)) + "px";
+  panel.style.top = Math.max(8, Math.min(r.top, innerHeight - r.height - 8)) + "px";
+}
+$("cameraDrag").onpointerdown = e => {
+  if (e.button !== 0) return;
+  const panel = $("cameraFloat"), handle = $("cameraDrag"), rect = panel.getBoundingClientRect();
+  const dx = e.clientX - rect.left, dy = e.clientY - rect.top;
+  handle.setPointerCapture(e.pointerId);
+  handle.onpointermove = event => {
+    Object.assign(panel.style, { left: Math.max(8, Math.min(event.clientX - dx, innerWidth - panel.offsetWidth - 8)) + "px", top: Math.max(8, Math.min(event.clientY - dy, innerHeight - panel.offsetHeight - 8)) + "px", right: "auto", bottom: "auto" });
+  };
+  handle.onpointerup = handle.onpointercancel = () => { handle.onpointermove = null; handle.onpointerup = handle.onpointercancel = null; };
+};
+addEventListener("resize", clampCameraFloat);
+try {
+  const size = JSON.parse(store.get("telao-camera-size") || "null");
+  if (size && Number.isFinite(size.width) && Number.isFinite(size.height)) {
+    $("cameraFloat").style.width = Math.min(innerWidth - 24, Math.max(160, size.width)) + "px";
+    $("cameraFloat").style.height = Math.min(innerHeight * .7, Math.max(110, size.height)) + "px";
+  }
+} catch {}
+new ResizeObserver(() => {
+  clampCameraFloat();
+  const panel = $("cameraFloat");
+  if (panel.offsetWidth && panel.offsetHeight) store.set("telao-camera-size", JSON.stringify({ width: panel.offsetWidth, height: panel.offsetHeight }));
+}).observe($("cameraFloat"));
+
 function addTile(id, stream) {
   let t = tileOf(id);
   if (!t) {
     t = document.createElement("div"); t.className = "tile"; t.dataset.id = id;
+    if (id.endsWith(":camera")) t.dataset.camera = "true";
     t.innerHTML = `<video autoplay playsinline muted></video><div class="fx"></div><span class="name"></span>`;
-    t.onclick = e => { if (armed) return throwAt(t, e); if (!t.classList.contains("focus")) theater(true, id); };
+    t.onclick = e => { if (armed) return throwAt(t, e); if (!t.hasAttribute("data-camera") && !t.classList.contains("focus")) theater(true, id); };
     t.oncontextmenu = e => { if (armed) { e.preventDefault(); arm(null); } };
     const fit = () => fitFx(t);
     new ResizeObserver(fit).observe(t);
     t.querySelector("video").addEventListener("resize", fit);
     t.querySelector("video").addEventListener("loadedmetadata", fit);
     t.ondblclick = () => fullscreen(t);
-    $("grid").appendChild(t);
+    $(id.endsWith(":camera") ? "cameraTiles" : "grid").appendChild(t);
   }
   const v = t.querySelector("video"); v.srcObject = stream;
   t.querySelector(".ctl")?.remove();
@@ -2369,9 +2557,9 @@ function addTile(id, stream) {
     ctl.querySelector("input").oninput = e => setVol(id, +e.target.value);
   } else {
     ctl.classList.add("bare");
-    if (id !== "me") ctl.innerHTML = `<span class="nosound">sem som</span>`;
+    if (id !== "me" && !id.endsWith(":camera")) ctl.innerHTML = `<span class="nosound">sem som</span>`;
   }
-  if (id !== "me") {
+  if (id !== "me" && !id.endsWith(":camera")) {
     const tr = document.createElement("button"); tr.className = "ib troll"; tr.textContent = "😈"; tr.title = "Atrapalhar quem está ao vivo";
     tr.onclick = () => openTroll(id, tr); ctl.appendChild(tr);
   }
@@ -2381,7 +2569,7 @@ function addTile(id, stream) {
   layout();
   apply(id);
   v.play().catch(() => { audio.muted.set(id, true); apply(id); render(); v.play().catch(() => {}); });
-  $("empty").classList.add("hidden");
+  $("empty").classList.toggle("hidden", !!document.querySelector("#grid .tile"));
   render();
 }
 // The effects layer covers exactly the picture (not the letterbox), so a splat lands
@@ -2395,9 +2583,10 @@ function fitFx(t) {
 function dropTile(id) {
   tileOf(id)?.remove();
   layout();
-  if (!document.querySelector(".tile")) $("empty").classList.remove("hidden");
+  if (!document.querySelector("#grid .tile")) $("empty").classList.remove("hidden");
   render();
 }
 </script>
+<script src="live-updates.js"></script>
 </body>
 </html>
