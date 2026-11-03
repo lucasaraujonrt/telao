@@ -4,6 +4,6 @@ Static page. Host creates a room (PeerJS id `telao-<code>`), shares the screen w
 
 Camera and screen can run together in separate tiles. Camera uses video only, without microphone capture. The camera controls offer mirror, black-and-white, VHS, neon and pixel effects; canvas processing applies the effect before transmission. Turning either source off leaves the other running. Camera permission requires localhost or HTTPS.
 
-The floating camera panel can be dragged and resized; its size persists locally. `live-updates.js` checks the page every 15 seconds while visible, applies inline CSS changes immediately, and queues code updates until no camera, screen, game or mode is active. It then reloads automatically into the same room. Existing clients need one manual refresh to install the updater.
+Cameras dock under the screens and fill the stage when nobody is sharing. `live-updates.js` checks the page every 15 seconds while visible, applies inline CSS changes immediately, and queues code updates until no camera, screen, game or mode is active. It then reloads automatically into the same room. Existing clients need one manual refresh to install the updater.
 
 Aura mode is the fourth sidebar mode, shortcut U. It runs a 15-second energy effect and reveals a room-wide fictional ranking. The initiating peer sends one ranking payload to everyone; `aura-mode.js` renders it using text nodes, cancels its phase timers on stop, and respects reduced motion. It uses the existing normalized aura sound at meme volume.

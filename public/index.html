@@ -352,15 +352,6 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
 }
 #cameraEffects,#cameraMirrorLabel{font-size:13px;display:flex;align-items:center;gap:6px;color:var(--giz)}
 #cameraEffect{background:var(--noite2);color:var(--giz);border:1px solid var(--giz2);border-radius:6px;padding:7px;font:inherit}
-#cameraFloat{position:fixed;right:16px;bottom:16px;z-index:9;width:230px;max-width:calc(100vw - 24px);max-height:70dvh;min-width:160px;min-height:110px;resize:both;display:flex;flex-direction:column;background:var(--noite);border:1px solid var(--line,var(--giz2));border-radius:12px;box-shadow:0 12px 40px #0008;overflow:hidden}
-#cameraFloat:has(#cameraTiles:empty){display:none}
-#cameraDrag{display:block;width:100%;border-radius:0;padding:9px 12px;text-align:left;font-size:13px;background:var(--tinta);color:var(--giz);cursor:grab;touch-action:none;flex:none}
-#cameraTiles{display:grid;flex:1;min-height:0;gap:6px;padding:6px;overflow:auto;max-height:calc(70dvh - 40px)}
-#cameraTiles .tile[data-camera]{height:auto;aspect-ratio:4/3;min-height:0;border-radius:8px;cursor:default;flex:none;outline:none}
-#cameraTiles .tile[data-camera] video{object-fit:contain}
-#cameraTiles .tile .name{font-size:13px;padding:4px 6px;max-width:75%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#cameraTiles .tile .ctl{display:flex;opacity:1}
-#cameraTiles .tile:fullscreen{width:100%;height:100%;aspect-ratio:auto}
 .mode.aura{background:linear-gradient(145deg,#b4fff0,#b695ff 60%,#6438b8);color:#170c38}
 #room.aura #haze{opacity:1}
 #room.aura #grid{filter:saturate(.45) contrast(1.12)}
@@ -398,9 +389,124 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
 .aura-reduced .aura-meter i{width:100%}
 @media(prefers-reduced-motion:reduce){.aura-scene *{animation:none!important;transition:none!important}}
 
+/* room shell: people on the left, stage in the middle, tools on the right */
+#room{--noite:#313338;--noite2:#3f4147;--tinta:#1e1f22;--giz:#dbdee1;--giz2:#949ba4;--papel:#5865f2;--rosa:#f23f43;
+  grid-template-columns:240px 1fr 300px;grid-template-rows:48px 1fr}
+#modeFx,#comboFx,.tile .fx,#game{--papel:#ffe600;--rosa:#ff3fa4;--tinta:#1b1464;--noite:#120f38;--noite2:#1d1a52;--giz:#ece9ff;--giz2:#a29fd0}
+#room.panel-off{grid-template-columns:240px 1fr}
+#room.panel-off #side{display:none}
+#room.afk{grid-template-columns:240px 1fr}
+#room.afk #side,#room.afk #panelBtn{display:none}
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.icon{display:grid;place-items:center;width:32px;height:32px;padding:0;border-radius:4px;background:none;color:var(--giz2);box-shadow:none;flex:none}
+.icon:hover{background:var(--noite2);color:var(--giz)}
+.icon[aria-pressed=true]{color:var(--giz)}
+#deaf[aria-pressed=true]{color:var(--rosa)}
+#away[aria-pressed=true]{background:none;color:#f0b232}
+#room button:focus-visible,#room select:focus-visible{outline:2px solid var(--papel);outline-offset:1px}
+#people{grid-column:1;grid-row:1/-1;display:flex;flex-direction:column;min-height:0;background:#2b2d31}
+#roster{flex:1;min-height:0;display:flex;flex-direction:column}
+.server{height:48px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 8px 0 16px;box-shadow:0 1px 0 #1e1f22}
+#room .logo{font:700 16px/1 Archivo,sans-serif;text-transform:none;color:#f2f3f5;text-shadow:none;margin:0}
+#room #count{padding:16px 16px 4px;font-size:12px;font-weight:700;color:var(--giz2)}
+#members{flex:1;min-height:0;overflow:auto;padding:0 8px 8px}
+#room .m{grid-template-columns:32px 1fr auto;gap:2px 10px;padding:5px 8px;border-radius:4px}
+#room .m:hover{background:#35373c}
+#room .av{width:32px;height:32px;font:700 14px/1 Archivo,sans-serif;color:#fff}
+#room .m .who b{font-weight:500;font-size:15px;color:var(--giz)}
+#room .m .who small{font-size:12px}
+.st{display:flex;align-items:center;gap:6px;color:var(--giz2)}
+.st .ic{width:16px;height:16px}
+#room .live{font-size:11px;font-weight:700;background:var(--rosa);color:#fff;padding:1px 6px;border-radius:4px}
+#mebar{flex:none;background:#232428;padding:8px;display:flex;flex-direction:column;gap:8px}
+#mebar .note{max-width:none;font-size:12px}
+.camopts{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.camopts:not(:has(label:not(.hidden))){display:none}
+#room #cameraEffects,#room #cameraMirrorLabel{font-size:12px;color:var(--giz2)}
+#room #cameraEffect{background:#1e1f22;border:0;border-radius:4px;padding:4px 6px;font-size:12px;max-width:120px}
+.calls{display:flex;gap:8px}
+.call{flex:1;display:grid;place-items:center;height:32px;padding:0;border-radius:4px;background:#2b2d31;color:var(--giz);box-shadow:none}
+.call:hover{background:var(--noite2)}
+.call[aria-pressed=true]{background:#f2f3f5;color:#1e1f22}
+.call.off{background:var(--rosa);color:#fff}
+.me{display:flex;align-items:center;gap:2px}
+#myName{flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:2px 4px;border-radius:4px;background:none;color:#f2f3f5;text-align:left;font:500 14px/1.2 Archivo,sans-serif}
+#myName:hover{background:var(--noite2)}
+#myName b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#myName .av{flex:none}
+#top{grid-column:2/-1;grid-row:1;min-width:0;flex-wrap:nowrap;gap:4px;padding:0 8px;height:48px;background:var(--noite);box-shadow:0 1px 0 #26282c;z-index:1}
+#top .grow{flex:1}
+#peopleBtn{display:none}
+#room .arsenal{background:none;padding:0;box-shadow:none;flex:none}
+#stage{grid-column:2;grid-row:2;display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--noite)}
+#room.panel-off #stage,#room.afk #stage{grid-column:2/-1}
+#stage #grid{flex:1;min-height:0;gap:8px;padding:8px}
+#cameraTiles{flex:none;display:flex;gap:8px;padding:0 8px 8px;overflow-x:auto}
+#cameraTiles:empty{display:none}
+#cameraTiles .tile[data-camera]{flex:none;width:176px;aspect-ratio:4/3;cursor:default}
+#cameraTiles .tile[data-camera] video{object-fit:cover}
+#cameraTiles .tile[data-camera]:fullscreen{width:100%;aspect-ratio:auto}
+#cameraTiles .tile[data-camera]:fullscreen video{object-fit:contain}
+#cameraTiles .tile .name{max-width:calc(100% - 44px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* nobody sharing: the cameras are the room */
+#stage:has(#empty:not(.hidden)):has(#cameraTiles .tile) #grid{display:none}
+#stage:has(#empty:not(.hidden)) #cameraTiles:not(:empty){flex:1;min-height:0;display:grid;grid-auto-rows:1fr;padding:8px;overflow:auto;grid-template-columns:1fr}
+#stage:has(#empty:not(.hidden)) #cameraTiles:has(.tile:nth-child(2)){grid-template-columns:repeat(2,1fr)}
+#stage:has(#empty:not(.hidden)) #cameraTiles:has(.tile:nth-child(5)){grid-template-columns:repeat(3,1fr)}
+#stage:has(#empty:not(.hidden)) #cameraTiles .tile[data-camera]{width:auto;aspect-ratio:auto;min-height:0}
+#stage:has(#empty:not(.hidden)) #cameraTiles .tile[data-camera] video{object-fit:contain}
+#room .tile{border-radius:8px;background:#1e1f22}
+#room .tile .name{left:8px;bottom:8px;font:500 13px/1 Archivo,sans-serif;text-transform:none;background:#000a;color:#fff;padding:5px 8px;border-radius:4px}
+#room .tile .ctl{background:#000a}
+#room .yes{color:#fff;box-shadow:none;border-radius:4px}
+#room .yes:hover{background:#4752c4}
+#room .no{border-radius:4px}
+#room #empty strong{font:700 20px/1.2 Archivo,sans-serif;text-transform:none;color:#f2f3f5;margin-bottom:6px}
+#room #empty{display:flex;flex-direction:column;align-items:center}
+#room #empty button{box-shadow:none;margin-top:12px;font-size:14px;padding:0 16px;height:38px;flex:none}
+#side{grid-column:3;grid-row:2;background:#2b2d31;border-left:0;padding:0 8px 8px}
+#side .board:first-child{margin-top:0;border-top:0}
+#room .board{border-top-color:#3f4147;border-top-width:1px}
+#side h2{font:700 12px/1.3 Archivo,sans-serif;text-transform:none;color:var(--giz2);padding:0 4px}
+#room .gamebtn{font:500 14px/1 Archivo,sans-serif;text-transform:none;box-shadow:none}
+#room .combo .yes{font:500 14px/1 Archivo,sans-serif;text-transform:none;box-shadow:none}
+#room .toast{background:#111214;color:#f2f3f5;box-shadow:0 4px 12px #0006;border-radius:4px;font-weight:500}
+#toasts{left:252px}
+#room.theater{grid-template-columns:1fr;grid-template-rows:1fr}
+#room.theater #people,#room.theater #panelBtn{display:none}
+#room.theater #top{grid-column:1;height:auto}
+#room.theater #stage{grid-column:1;grid-row:1;background:#000}
+#room.theater #stage #grid{padding:0 0 8px}
+#room.theater .tile{background:#000}
+#room.theater #cameraTiles .tile[data-camera]{width:128px}
+@media (max-width:760px){
+  #room,#room.panel-off,#room.afk{grid-template-columns:1fr;grid-template-rows:48px 1fr auto}
+  #people{display:contents}
+  #roster{position:fixed;left:0;top:48px;bottom:0;width:min(280px,85vw);z-index:7;background:#2b2d31;box-shadow:4px 0 16px #0006;display:none}
+  #room.people-open #roster{display:flex}
+  #mebar{grid-column:1;grid-row:3}
+  #top{grid-column:1}
+  #room .arsenal{flex:1;min-width:0;overflow-x:auto}
+  #top .grow{display:none}
+  #peopleBtn{display:grid}
+  #stage,#room.panel-off #stage,#room.afk #stage{grid-column:1;grid-row:2}
+  #side{position:fixed;right:0;top:48px;bottom:0;width:min(320px,90vw);max-height:none;z-index:7;box-shadow:-4px 0 16px #0006;border-top:0}
+  #toasts{left:14px;bottom:150px}
+}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-video" viewBox="0 0 24 24"><path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="6" width="14" height="12" rx="2"/></symbol>
+<symbol id="i-screen" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4M9 10l3-3 3 3M12 7v6"/></symbol>
+<symbol id="i-screen-off" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4M9.5 7.5l5 5M14.5 7.5l-5 5"/></symbol>
+<symbol id="i-headphones" viewBox="0 0 24 24"><path d="M3 14v-2a9 9 0 0 1 18 0v2"/><path d="M21 15a2 2 0 0 1-2 2h-1a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3zM3 15a2 2 0 0 0 2 2h1a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1H3z"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></symbol>
+<symbol id="i-expand" viewBox="0 0 24 24"><path d="M3 8V5a2 2 0 0 1 2-2h3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M21 16v3a2 2 0 0 1-2 2h-3"/></symbol>
+<symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+</defs></svg>
 <main id="home">
   <section class="poster">
     <div class="kicker" id="kicker">Hoje tem</div>
@@ -415,17 +521,29 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
 </main>
 
 <div id="room" class="hidden">
+  <aside id="people" aria-label="Pessoas na sala">
+    <div id="roster">
+      <div class="server"><div class="logo">Telão</div><button id="copy" class="icon" title="Copiar link da sala" aria-label="Copiar link da sala"><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg></button><span id="url" class="hidden"></span></div>
+      <div id="count"></div>
+      <div id="members"></div>
+    </div>
+    <div id="mebar">
+      <span id="note" class="note hidden"></span>
+      <div class="camopts"><label id="cameraEffects" class="hidden">Efeito <select id="cameraEffect" aria-label="Efeito da câmera"><option value="normal">Normal</option><option value="mono">Cinema P&amp;B</option><option value="vhs">VHS da tropa</option><option value="neon">Neon</option><option value="pixel">Pixelado</option></select></label><label id="cameraMirrorLabel" class="hidden"><input id="cameraMirror" type="checkbox" checked> Espelhar</label></div>
+      <div class="calls">
+        <button id="camera" class="call" aria-pressed="false" title="Ligar câmera" aria-label="Ligar câmera"><svg class="ic" aria-hidden="true"><use href="#i-video"/></svg></button>
+        <button id="share" class="call" title="Mostrar minha tela" aria-label="Mostrar minha tela"><svg class="ic" aria-hidden="true"><use href="#i-screen"/></svg></button>
+        <button id="stop" class="call off hidden" title="Parar de mostrar" aria-label="Parar de mostrar"><svg class="ic" aria-hidden="true"><use href="#i-screen-off"/></svg></button>
+      </div>
+      <div class="me">
+        <button id="myName" title="Trocar nome"><span id="myAv" class="av"></span><b id="myLabel"></b></button>
+        <button id="deaf" class="icon" aria-pressed="false" title="Mutar tudo" aria-label="Mutar tudo"><svg class="ic" aria-hidden="true"><use href="#i-headphones"/></svg></button>
+        <button id="away" class="icon" aria-pressed="false" title="Modo ausente: sem memes, modos, pegadinhas e joguinho para você. As lives continuam com som." aria-label="Modo ausente"><svg class="ic" aria-hidden="true"><use href="#i-moon"/></svg></button>
+      </div>
+    </div>
+  </aside>
   <div id="top">
-    <div class="logo">Telão</div>
-    <div class="link"><span id="url"></span><button id="copy">Copiar link</button></div>
-    <button id="share" class="yes">Mostrar minha tela</button>
-    <button id="stop" class="no hidden">Parar de mostrar</button>
-    <button id="camera" class="quiet" aria-pressed="false">Ligar câmera</button>
-    <label id="cameraEffects" class="hidden">Efeito <select id="cameraEffect" aria-label="Efeito da câmera"><option value="normal">Normal</option><option value="mono">Cinema P&amp;B</option><option value="vhs">VHS da tropa</option><option value="neon">Neon</option><option value="pixel">Pixelado</option></select></label>
-    <label id="cameraMirrorLabel" class="hidden"><input id="cameraMirror" type="checkbox" checked> Espelhar</label>
-    <span id="note" class="note hidden"></span>
-    <button id="deaf" class="quiet" aria-pressed="false">Mutar tudo</button>
-    <button id="away" class="quiet" aria-pressed="false" title="Sem memes, modos, pegadinhas e joguinho para você. As lives continuam com som.">Modo ausente</button>
+    <button id="peopleBtn" class="icon" title="Pessoas na sala" aria-label="Pessoas na sala"><svg class="ic" aria-hidden="true"><use href="#i-users"/></svg></button>
     <div class="arsenal" role="group" aria-label="Zoeira">
       <button class="ib arm" data-item="tomate" aria-pressed="false" title="Tomate (Z): arma e clica numa live">🍅</button>
       <button class="ib arm" data-item="ovo" aria-pressed="false" title="Ovo (X): arma e clica numa live">🥚</button>
@@ -438,12 +556,16 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
       <button class="ib rx" data-r="4" title="Reação (5)">😭</button>
 
     </div>
-    <button id="theater" class="quiet" aria-pressed="false" title="Atalho: T. Esc sai.">Modo teatro</button>
+    <span class="grow"></span>
+    <button id="theater" class="icon" aria-pressed="false" title="Modo teatro (T)" aria-label="Modo teatro"><svg class="ic" aria-hidden="true"><use href="#i-expand"/></svg></button>
+    <button id="panelBtn" class="icon" aria-pressed="true" title="Ocultar painel (B)" aria-label="Ocultar painel"><svg class="ic" aria-hidden="true"><use href="#i-panel"/></svg></button>
   </div>
-  <div id="grid"><p id="empty"><strong>Telão apagado</strong><span>Ninguém está mostrando a tela. Clique em “Mostrar minha tela” para começar.</span><button id="emptyPlay" class="yes">Treinar mira enquanto isso</button></p></div>
+  <div id="stage">
+  <div id="grid"><p id="empty"><strong>Telão apagado</strong><span>Ninguém está mostrando a tela.</span><button id="emptyShare" class="yes">Mostrar minha tela</button><button id="emptyPlay" class="call">Treinar mira enquanto isso</button></p></div>
+  <div id="cameraTiles"></div>
+  </div>
   <aside id="side">
-    <h2>Na sala</h2><div id="count"></div><div id="members"></div>
-    <section class="board">
+        <section class="board">
       <h2>Modos</h2>
       <p class="hint">15 segundos para a sala toda.</p>
       <div class="modes">
@@ -512,7 +634,6 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
       </form>
     </div>
   </section>
-  <aside id="cameraFloat" aria-label="Câmeras flutuantes"><button id="cameraDrag" type="button" aria-label="Arrastar câmeras">Câmeras · arraste para mover</button><div id="cameraTiles"></div></aside>
   <div id="toasts" aria-live="polite"></div>
   <div id="comboFx" aria-hidden="true"></div>
   <canvas id="haze" aria-hidden="true"></canvas>
@@ -700,7 +821,7 @@ function start(code) {
     cameraCalls.forEach(c => c.close()); cameraCalls.clear();
     conns.forEach(c => { if (c.open) c.send({ t: "camera-stop", session: cameraSession }); });
     dropTile("me:camera");
-    $("camera").textContent = "Ligar câmera"; $("camera").setAttribute("aria-pressed", "false");
+    labelBtn("camera", "Ligar câmera"); $("camera").setAttribute("aria-pressed", "false");
     $("cameraEffects").classList.add("hidden"); $("cameraMirrorLabel").classList.add("hidden");
   }
   $("camera").onclick = async () => {
@@ -736,7 +857,7 @@ function start(code) {
       cameraStream = canvas.captureStream(24);
       cameraRaw.getVideoTracks()[0].onended = stopCamera;
       addTile("me:camera", cameraStream); conns.forEach((_, id) => callCamera(id));
-      $("camera").textContent = "Desligar câmera"; $("camera").setAttribute("aria-pressed", "true");
+      labelBtn("camera", "Desligar câmera"); $("camera").setAttribute("aria-pressed", "true");
       $("cameraEffects").classList.remove("hidden"); $("cameraMirrorLabel").classList.remove("hidden");
     } catch (e) {
       stopCamera();
@@ -798,12 +919,13 @@ function start(code) {
     const people = [{ id: "me", name: myName, me: true }, ...[...conns.keys()].map(id => ({ id, name: names.get(id) || "conectando…" }))];
     const live = document.querySelectorAll(".tile:not([data-camera])").length;
     const cameras = document.querySelectorAll(".tile[data-camera]").length;
-    $("count").textContent = `${people.length} ${people.length === 1 ? "pessoa" : "pessoas"}, ${live} de ${MAX} telas ao vivo · ${cameras} câmeras`;
+    $("count").textContent = `Na sala: ${people.length}`;
+    $("myLabel").textContent = myName; $("myAv").textContent = (myName[0] || "?").toUpperCase(); $("myAv").style.background = color(myName);
     const box = $("members"); box.replaceChildren();
     for (const p of people) box.appendChild(member(p));
     document.querySelectorAll(".tile").forEach(t => {
       const owner = t.dataset.id.replace(/:camera$/, "");
-      t.querySelector(".name").textContent = (owner === "me" ? `${myName} (você)` : names.get(owner) || "conectando…") + (t.hasAttribute("data-camera") ? " · câmera" : " · tela");
+      t.querySelector(".name").textContent = (owner === "me" ? `${myName} (você)` : names.get(owner) || "conectando…") + (t.hasAttribute("data-camera") ? "" : " · tela");
     });
   };
 }
@@ -815,11 +937,11 @@ function enterRoom(code) {
   history.replaceState(null, "", "#" + code);
   $("home").classList.add("hidden"); $("room").classList.remove("hidden");
   $("url").textContent = url;
-  $("copy").onclick = async () => { await navigator.clipboard.writeText(url); $("copy").textContent = "Copiado"; setTimeout(() => $("copy").textContent = "Copiar link", 1500); };
+  $("copy").onclick = async () => { await navigator.clipboard.writeText(url); toast("Link da sala copiado."); };
   $("deaf").onclick = () => {
     audio.deaf = !audio.deaf;
     $("deaf").setAttribute("aria-pressed", audio.deaf);
-    $("deaf").textContent = audio.deaf ? "Desmutar tudo" : "Mutar tudo";
+    labelBtn("deaf", audio.deaf ? "Desmutar tudo" : "Mutar tudo");
     applyAll(); render();
   };
 }
@@ -855,7 +977,7 @@ function apply(id) {
 }
 function applyAll() { document.querySelectorAll(".tile").forEach(t => apply(t.dataset.id)); }
 function toggleMute(id) {
-  if (audio.deaf) { audio.deaf = false; $("deaf").setAttribute("aria-pressed", false); $("deaf").textContent = "Mutar tudo"; audio.muted.set(id, false); applyAll(); }
+  if (audio.deaf) { audio.deaf = false; $("deaf").setAttribute("aria-pressed", false); labelBtn("deaf", "Mutar tudo"); audio.muted.set(id, false); applyAll(); }
   else audio.muted.set(id, !isMuted(id));
   apply(id); render();
 }
@@ -870,6 +992,8 @@ function setVol(id, pct) {
 /* ---------- members ---------- */
 const AVATARS = ["#ffe600", "#ff3fa4", "#3fd0ff", "#b6f24a", "#ff9b3f"];
 function color(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return AVATARS[h % AVATARS.length]; }
+function labelBtn(id, text) { $(id).title = text; $(id).setAttribute("aria-label", text); }
+const stIcon = (name, title) => `<svg class="ic" role="img" aria-label="${title}"><title>${title}</title><use href="#i-${name}"/></svg>`;
 function member(p) {
   const el = document.createElement("div"); el.className = "m";
   const live = !!tileOf(p.id);
@@ -879,7 +1003,6 @@ function member(p) {
   const b = document.createElement("b"); b.textContent = p.name; who.append(b);
   if (p.me) {
     const s = document.createElement("small"); s.textContent = "você"; who.append(s);
-    const r = document.createElement("button"); r.className = "rename"; r.textContent = "trocar nome"; r.onclick = () => rename(); who.append(r);
     if ("Notification" in window && Notification.permission === "default") {
       const nb = document.createElement("button"); nb.className = "rename"; nb.textContent = "liberar notificações";
       nb.title = "Deixa a tropa te mandar notificações de zoeira enquanto você joga";
@@ -888,10 +1011,8 @@ function member(p) {
     }
   }
   el.append(av, who);
-  const badge = document.createElement("span");
-  if (live) { badge.className = "live"; badge.textContent = camera ? "tela + câmera" : "ao vivo"; }
-  else if (camera) { badge.className = "live"; badge.textContent = "câmera"; }
-  else if (p.me ? away : awayIds.has(p.id)) { badge.className = "away"; badge.textContent = "ausente"; }
+  const badge = document.createElement("span"); badge.className = "st";
+  badge.innerHTML = (camera ? stIcon("video", "Câmera ligada") : "") + (live ? `<span class="live">ao vivo</span>` : "") + ((p.me ? away : awayIds.has(p.id)) ? stIcon("moon", "Ausente") : "");
   el.append(badge);
   const h = hits.get(p.id);
   if (h) {
@@ -1675,7 +1796,7 @@ function theater(on, id) {
   if (id) view.focus = id;
   $("room").classList.toggle("theater", on);
   $("theater").setAttribute("aria-pressed", on);
-  $("theater").textContent = on ? "Sair do teatro" : "Modo teatro";
+  labelBtn("theater", on ? "Sair do teatro (T)" : "Modo teatro (T)");
   layout();
 }
 function layout() {
@@ -1690,6 +1811,7 @@ addEventListener("keydown", e => {
   if (e.target.matches?.("input,select,textarea,[contenteditable=true]") || $("room").classList.contains("hidden")) return;
   if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
   const k = e.key.toLowerCase();
+  if (k === "b") return setPanel($("room").classList.contains("panel-off"));
   if (k === "escape") { if (!$("trollPop").classList.contains("hidden")) closeTroll(); else if (game && Date.now() - unlockedAt > 400) closeGame(); else if (armed) arm(null); else if (view.theater && !document.fullscreenElement) theater(false); return; }
   if (e.target.matches?.("input[type=range]")) return;
   if (game) return;
@@ -2501,36 +2623,18 @@ $("gAgain").onclick = () => game?.duel ? challenge(game.foe) : startGame();
 $("gClose").onclick = closeGame;
 
 /* ---------- tiles ---------- */
-function clampCameraFloat() {
-  const panel = $("cameraFloat");
-  if (!panel.style.left || !$("cameraTiles").children.length) return;
-  const r = panel.getBoundingClientRect();
-  panel.style.left = Math.max(8, Math.min(r.left, innerWidth - r.width - 8)) + "px";
-  panel.style.top = Math.max(8, Math.min(r.top, innerHeight - r.height - 8)) + "px";
+$("myName").onclick = () => rename();
+$("emptyShare").onclick = () => $("share").click();
+function setPanel(on) {
+  $("room").classList.toggle("panel-off", !on);
+  $("panelBtn").setAttribute("aria-pressed", on);
+  labelBtn("panelBtn", on ? "Ocultar painel (B)" : "Mostrar painel (B)");
+  if (on && innerWidth <= 760) $("room").classList.remove("people-open");
+  if (innerWidth > 760) store.set("telao-panel", on ? "1" : "0");
 }
-$("cameraDrag").onpointerdown = e => {
-  if (e.button !== 0) return;
-  const panel = $("cameraFloat"), handle = $("cameraDrag"), rect = panel.getBoundingClientRect();
-  const dx = e.clientX - rect.left, dy = e.clientY - rect.top;
-  handle.setPointerCapture(e.pointerId);
-  handle.onpointermove = event => {
-    Object.assign(panel.style, { left: Math.max(8, Math.min(event.clientX - dx, innerWidth - panel.offsetWidth - 8)) + "px", top: Math.max(8, Math.min(event.clientY - dy, innerHeight - panel.offsetHeight - 8)) + "px", right: "auto", bottom: "auto" });
-  };
-  handle.onpointerup = handle.onpointercancel = () => { handle.onpointermove = null; handle.onpointerup = handle.onpointercancel = null; };
-};
-addEventListener("resize", clampCameraFloat);
-try {
-  const size = JSON.parse(store.get("telao-camera-size") || "null");
-  if (size && Number.isFinite(size.width) && Number.isFinite(size.height)) {
-    $("cameraFloat").style.width = Math.min(innerWidth - 24, Math.max(160, size.width)) + "px";
-    $("cameraFloat").style.height = Math.min(innerHeight * .7, Math.max(110, size.height)) + "px";
-  }
-} catch {}
-new ResizeObserver(() => {
-  clampCameraFloat();
-  const panel = $("cameraFloat");
-  if (panel.offsetWidth && panel.offsetHeight) store.set("telao-camera-size", JSON.stringify({ width: panel.offsetWidth, height: panel.offsetHeight }));
-}).observe($("cameraFloat"));
+setPanel(innerWidth > 760 && store.get("telao-panel") !== "0");
+$("panelBtn").onclick = () => setPanel($("room").classList.contains("panel-off"));
+$("peopleBtn").onclick = () => { if ($("room").classList.toggle("people-open")) setPanel(false); };
 
 function addTile(id, stream) {
   let t = tileOf(id);
