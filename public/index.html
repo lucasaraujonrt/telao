@@ -7,7 +7,7 @@
 <meta name="description" content="Crie uma sala, compartilhe a tela e mande o link no Discord.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=Archivo:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=Archivo:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 :root{
   --papel:#ffe600;   /* fluorescent poster paper */
@@ -716,12 +716,12 @@ function start(code) {
       await cameraVideo.play();
       if (request !== cameraCancelled || peer.destroyed) return;
       const canvas = document.createElement("canvas"); canvas.width = 640; canvas.height = 480;
-      const ctx = canvas.getContext("2d"), small = document.createElement("canvas"); small.width = 80; small.height = 60;
+      const ctx = canvas.getContext("2d", { alpha: false }), small = document.createElement("canvas"); small.width = 80; small.height = 60;
       const tiny = small.getContext("2d");
       const draw = () => {
         if (!cameraVideo) return;
         const effect = $("cameraEffect").value;
-        ctx.save(); ctx.clearRect(0, 0, 640, 480);
+        ctx.save();
         if ($("cameraMirror").checked) { ctx.translate(640, 0); ctx.scale(-1, 1); }
         ctx.filter = effect === "mono" ? "grayscale(1) contrast(1.2)" : effect === "vhs" ? "sepia(.4) saturate(1.5) contrast(1.1)" : effect === "neon" ? "hue-rotate(275deg) saturate(2.8) contrast(1.3)" : "none";
         if (effect === "pixel") { tiny.drawImage(cameraVideo, 0, 0, 80, 60); ctx.imageSmoothingEnabled = false; ctx.drawImage(small, 0, 0, 640, 480); }
@@ -809,7 +809,8 @@ function start(code) {
 }
 
 function enterRoom(code) {
-  ["pod.webp", "snoop.webp", "smoke-snoop.gif", "smoke-elon.gif", "smoke-wiz.gif", "tigrinho.webp"].forEach(f => { new Image().src = "img/" + f; });
+  // After the room connects: these 2.7 MB shouldn't compete with joining.
+  setTimeout(() => ["pod.webp", "snoop.webp", "smoke-snoop.gif", "smoke-elon.gif", "smoke-wiz.gif", "tigrinho.webp"].forEach(f => { new Image().src = "img/" + f; }), 3000);
   const url = `${location.origin}${location.pathname}#${code}`;
   history.replaceState(null, "", "#" + code);
   $("home").classList.add("hidden"); $("room").classList.remove("hidden");
@@ -1948,15 +1949,15 @@ function buildAk(T, m) {
 function buildRange(cv) {
   const T = THREE, r = new T.WebGLRenderer({ canvas: cv, antialias: true });
   T.ColorManagement.legacyMode = false;   // hex colors below are sRGB, like CSS
-  r.setPixelRatio(Math.min(devicePixelRatio, 2));
+  r.setPixelRatio(Math.min(devicePixelRatio, 1.5));
   r.outputEncoding = T.sRGBEncoding; r.toneMapping = T.ACESFilmicToneMapping; r.toneMappingExposure = .9;
-  r.shadowMap.enabled = true; r.shadowMap.type = T.PCFSoftShadowMap;
+  r.shadowMap.enabled = true; r.shadowMap.type = T.PCFShadowMap;
   const SKY = 0xa8c3d8, scene = new T.Scene();
   scene.background = new T.Color(SKY); scene.fog = new T.Fog(SKY, 26, 70);
   const cam = new T.PerspectiveCamera(70, 16 / 9, .03, 140); cam.rotation.order = "YXZ";
   scene.add(new T.HemisphereLight(0xeaf4ff, 0x5b646b, .95));
   const sun = new T.DirectionalLight(0xfff0d8, 1.7); sun.position.set(-9, 16, 7); sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -22, right: 22, top: 22, bottom: -22, near: 1, far: 60 }); sun.shadow.bias = -.0004;
+  sun.shadow.mapSize.set(1024, 1024); Object.assign(sun.shadow.camera, { left: -22, right: 22, top: 22, bottom: -22, near: 1, far: 60 }); sun.shadow.bias = -.0004;
   scene.add(sun);
   const std = (color, o = {}) => new T.MeshStandardMaterial({ color, roughness: .82, metalness: 0, ...o });
   const solids = [];   // everything a bullet can stop on and leave a mark

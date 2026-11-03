@@ -2,7 +2,7 @@
   const currentScripts = [...document.scripts].map(script => ({ src: script.getAttribute('src'), text: script.textContent }));
   const signature = scripts => JSON.stringify(scripts.map(script => [script.src, script.text]));
   const initial = signature(currentScripts);
-  let checking = false, pending = false, reloadAt = 0;
+  let checking = false, pending = false, reloadAt = 0, lastPage = '';
   const notice = document.createElement('div');
   notice.setAttribute('role', 'status');
   notice.hidden = true;
@@ -22,10 +22,12 @@
     if (checking || !navigator.onLine || document.visibilityState === 'hidden') return;
     checking = true;
     try {
-      const url = new URL(location.pathname, location.origin); url.searchParams.set('_telao_update', Date.now());
-      const response = await fetch(url, { cache: 'no-store' });
+      // no-cache revalidates, so an unchanged page costs a 304 instead of the whole file.
+      const response = await fetch(location.pathname, { cache: 'no-cache' });
       if (!response.ok) return;
-      const next = new DOMParser().parseFromString(await response.text(), 'text/html');
+      const page = await response.text();
+      if (page === lastPage) return;
+      const next = new DOMParser().parseFromString(page, 'text/html');
       const scripts = [...next.scripts].map(script => ({ src: script.getAttribute('src'), text: script.textContent }));
       if (!scripts.some(script => script.src === 'live-updates.js')) return;
       const styles = [...next.head.querySelectorAll('style')];
@@ -36,6 +38,7 @@
       pending = signature(scripts) !== initial;
       if (!pending) { notice.hidden = true; reloadAt = 0; }
       applyWhenReady();
+      lastPage = page;
     } catch {} finally { checking = false; }
   };
   setInterval(check, 15000);
