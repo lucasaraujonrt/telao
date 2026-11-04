@@ -4,7 +4,7 @@ Static page. Open a room and share its link. Anyone with the link joins directly
 
 Camera and screen can run together in separate tiles. Normal camera video uses the original camera track. Selecting an effect starts canvas processing; returning to Normal stops it. The mirror setting affects your local preview. Camera uses video only, without microphone capture. The camera controls offer black-and-white, VHS, neon and pixel effects before transmission. Turning either source off leaves the other running. Camera permission requires localhost or HTTPS.
 
-Cameras dock under the screens and fill the stage when nobody is sharing. `live-updates.js` checks the page every 5 minutes while visible (with browser cache revalidation), applies inline CSS changes immediately, and queues code updates until no camera, screen, game or mode is active. It then reloads automatically into the same room. Clients from older deployments need a manual refresh.
+Cameras dock under the screens and fill the stage when nobody is sharing. After a deploy, refresh the page to pick up the new code.
 
 Aura mode is the fourth sidebar mode, shortcut U. It runs a 15-second energy effect and reveals a room-wide fictional ranking. The initiating peer sends one ranking payload to everyone; `aura-mode.js` renders it using text nodes, cancels its phase timers on stop, and respects reduced motion. It uses the existing normalized aura sound at meme volume.
 
