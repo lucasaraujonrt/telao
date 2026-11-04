@@ -2,7 +2,7 @@
   const currentScripts = [...document.scripts].map(script => ({ src: script.getAttribute('src'), text: script.textContent }));
   const signature = scripts => JSON.stringify(scripts.map(script => [script.src, script.text]));
   const initial = signature(currentScripts);
-  let checking = false, pending = false, reloadAt = 0, lastPage = '';
+  let checking = false, pending = false, reloadAt = 0, lastPage = '', lastCheck = 0;
   const notice = document.createElement('div');
   notice.setAttribute('role', 'status');
   notice.hidden = true;
@@ -19,8 +19,8 @@
     if (seconds === 0) location.reload();
   };
   const check = async () => {
-    if (checking || !navigator.onLine || document.visibilityState === 'hidden') return;
-    checking = true;
+    if (checking || !navigator.onLine || document.visibilityState === 'hidden' || Date.now() - lastCheck < 300_000) return;
+    checking = true; lastCheck = Date.now();
     try {
       // no-cache revalidates, so an unchanged page costs a 304 instead of the whole file.
       const response = await fetch(location.pathname, { cache: 'no-cache' });
@@ -41,7 +41,7 @@
       lastPage = page;
     } catch {} finally { checking = false; }
   };
-  setInterval(check, 15000);
+  setInterval(check, 300_000);
   setInterval(applyWhenReady, 1000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
   window.addEventListener('online', check);

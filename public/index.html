@@ -424,6 +424,8 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
 .camopts:not(:has(label:not(.hidden))){display:none}
 #room #cameraEffects,#room #cameraMirrorLabel{font-size:12px;color:var(--giz2)}
 #room #cameraEffect{background:#1e1f22;border:0;border-radius:4px;padding:4px 6px;font-size:12px;max-width:120px}
+.stream-quality{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--giz2)}
+#streamQuality{width:100%;min-width:0;padding:6px;border:0;border-radius:4px;font:inherit;color:var(--giz);background:var(--tinta)}
 .calls{display:flex;gap:8px}
 .call{flex:1;display:grid;place-items:center;height:32px;padding:0;border-radius:4px;background:#2b2d31;color:var(--giz);box-shadow:none}
 .call:hover{background:var(--noite2)}
@@ -530,6 +532,7 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
     <div id="mebar">
       <span id="note" class="note hidden"></span>
       <div class="camopts"><label id="cameraEffects" class="hidden">Efeito <select id="cameraEffect" aria-label="Efeito da câmera"><option value="normal">Normal</option><option value="mono">Cinema P&amp;B</option><option value="vhs">VHS da tropa</option><option value="neon">Neon</option><option value="pixel">Pixelado</option></select></label><label id="cameraMirrorLabel" class="hidden"><input id="cameraMirror" type="checkbox" checked> Espelhar</label></div>
+      <label class="stream-quality">Transmissão <select id="streamQuality"><option value="game">Jogos · 720p / 60 fps</option><option value="detail">Texto · 1080p / 30 fps</option><option value="light">Leve · 720p / 30 fps</option></select></label>
       <div class="calls">
         <button id="camera" class="call" aria-pressed="false" title="Ligar câmera" aria-label="Ligar câmera"><svg class="ic" aria-hidden="true"><use href="#i-video"/></svg></button>
         <button id="share" class="call" title="Mostrar minha tela" aria-label="Mostrar minha tela"><svg class="ic" aria-hidden="true"><use href="#i-screen"/></svg></button>
@@ -644,12 +647,15 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
   </svg>
 </div>
 
+<script src="streaming.js"></script>
+<script src="camera-source.js"></script>
 <script src="aura-mode.js"></script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 // The game window can move into a Picture-in-Picture document; look there too.
 let pipWin = null;
 let updateCaptureBusy = () => false;
+let updateStreamingPreferences = () => {};
 const $ = id => document.getElementById(id) || pipWin?.document.getElementById(id);
 const ALPHA = "abcdefghjkmnpqrstuvwxyz23456789";
 const PREFIX = "telao-", MAX = 4;
@@ -668,11 +674,13 @@ let away = store.get("telao-away") === "1";
 const awayIds = new Set();
 const hello = () => ({ t: "hello", name: myName, notif: canNotify(), away });
 
-const code = location.hash.slice(1).toLowerCase();
+const code = location.hash.slice(1);
+const roomCode = code.startsWith("v1.") ? code.split(".")[1] : code;
+const validRoom = /^[A-Za-z0-9_-]{6,100}$/.test(roomCode);
 $("nick").value = store.get("telao-nick") || "";
 if (code) {
   $("kicker").textContent = "Chamaram você pro";
-  $("lede").textContent = "Escolhe um nome para entrar. A tropa vê esse nome na lista da sala.";
+  $("lede").textContent = validRoom ? "Escolhe um nome para entrar na sala." : "Este link é inválido. Peça outro link da sala.";
   $("go").textContent = "Entrar na sala";
 }
 $("nick").focus();
@@ -681,35 +689,46 @@ $("enter").onsubmit = e => {
   myName = $("nick").value.trim().slice(0, 24) || "Anônimo";
   store.set("telao-nick", myName);
   $("go").disabled = true;
-  start(code || rand(6));
+  if (code && !validRoom) { $("go").disabled = false; return; }
+  start(roomCode || rand(24));
 };
-// A returning member opening a room link goes straight in.
-if (code && store.get("telao-nick")) { myName = store.get("telao-nick"); $("home").classList.add("hidden"); start(code); }
-
-// Every member has a random peer id. The room itself is a second peer, `telao-<code>`,
-// hosted by whichever member claimed it first: it hands newcomers the member list and
-// caps simultaneous sharers. When its host leaves, the remaining members race to claim it.
+if (validRoom && store.get("telao-nick")) { myName = store.get("telao-nick"); $("go").disabled = true; start(roomCode); }
 function start(code) {
   const hubId = PREFIX + code;
   const peer = new Peer();
   const conns = new Map();     // peerId -> DataConnection (member mesh)
-  const cameraCalls = new Map(), incomingCameras = new Map(), stoppedCameras = new Map();
+  const cameraCalls = new Map(), incomingScreens = new Map(), incomingCameras = new Map(), stoppedCameras = new Map();
+  const connecting = new Map(), roomMembers = new Set();
+  const sharers = new Set();
+  let roomEntered = false, ended = false;
+  const timers = new Set();
+  const every = (fn, ms) => { const timer = setInterval(fn, ms); timers.add(timer); return timer; };
   let cameraSession = 0, cameraCancelled = 0;
   updateCaptureBusy = () => !!stream || !!cameraRaw || cameraPending || $("share").disabled;
-  let cameraStream = null, cameraRaw = null, cameraTimer = null, cameraVideo = null, cameraPending = false;
+  let cameraStream = null, cameraRaw = null, cameraSource = null, cameraVideo = null, cameraPending = false;
+  const streaming = TelaoStreaming.createStreamController({ uploadBudget: 8_000_000 });
+  const receiverPreferences = new Map(), sentPreferences = new WeakMap();
   const calls = new Map();     // peerId -> outgoing MediaConnection
-  let stream = null, myId = null, hub = null, hubConn = null, claiming = false;
+  const screenProfiles = {
+    game: { width: 1280, height: 720, fps: 60, bitrate: 4_000_000, motion: true },
+    detail: { width: 1920, height: 1080, fps: 30, bitrate: 3_000_000, motion: false },
+    light: { width: 1280, height: 720, fps: 30, bitrate: 1_500_000, motion: true },
+  };
+  let screenProfile = screenProfiles.game;
+  let stream = null, myId = null, hub = null, hubConn = null, claiming = false, directoryPeer = null;
 
-  peer.on("open", id => { myId = id; enterRoom(code); joinHub(); render(); });
-  addEventListener("pagehide", () => { stopCamera(); hub?.peer.destroy(); peer.destroy(); });
-  window.telaoDebug = () => ({ me: myId, hosting: !!hub, claiming, hubOpen: !!hubConn?.open, members: [...conns.keys()], directory: hub && [...hub.conns.keys()] });
+  peer.on("open", id => { myId = id; joinHub(); });
+  addEventListener("pagehide", () => finishRoom("closed"));
+  window.telaoDebug = () => ({ me: myId, hosting: !!hub, state: ended ? "closed" : roomEntered ? "connected" : "connecting", members: [...conns.keys()] });
   peer.on("disconnected", () => peer.destroyed || peer.reconnect());
-  peer.on("error", e => {
-    if (e.type === "peer-unavailable") { if (String(e.message).includes(hubId)) claimHub(); return; }
-    if (e.type !== "disconnected" && e.type !== "network") console.warn("peer", e.type, e);
+  peer.on("error", error => {
+    if (error.type === "peer-unavailable") { if (String(error.message).includes(hubId)) claimHub(); return; }
+    if (error.type !== "disconnected" && error.type !== "network") console.warn("peer", error.type);
   });
+  peer.on("close", () => finishRoom("closed"));
   peer.on("connection", c => wire(c));
   peer.on("call", call => {
+    if (!connectedMember(call.peer)) { call.close(); return; }
     const camera = call.metadata?.kind === "camera";
     const id = camera ? call.peer + ":camera" : call.peer;
     if (camera) {
@@ -718,62 +737,152 @@ function start(code) {
       if (!Number.isSafeInteger(session) || session <= (stoppedCameras.get(call.peer) || 0) || session < (previous?.metadata.session || 0)) { call.close(); return; }
       incomingCameras.set(call.peer, call); previous?.close();
     }
+    const registry = camera ? incomingCameras : incomingScreens;
+    if (!camera) { const previous = registry.get(call.peer); registry.set(call.peer, call); previous?.close(); }
     call.answer();
-    call.on("stream", s => { if (!camera || incomingCameras.get(call.peer) === call) addTile(id, s); });
-    call.on("close", () => { if (!camera || incomingCameras.get(call.peer) === call) { if (camera) incomingCameras.delete(call.peer); dropTile(id); } });
+    call.on("stream", media => { if (connectedMember(call.peer) && registry.get(call.peer) === call) addTile(id, media); else call.close(); });
+    call.on("close", () => { if (registry.get(call.peer) !== call) return; registry.delete(call.peer); dropTile(id); });
+    call.on("error", () => call.close());
   });
 
-  /* ---------- room directory ---------- */
+  function connectedMember(id) { return !ended && roomMembers.has(id) && conns.get(id)?.open; }
+  function enterConnectedRoom() {
+    if (roomEntered || ended) return;
+    roomEntered = true; enterRoom(code); render();
+  }
+  function disconnectMember(id) {
+    connecting.get(id)?.close(); connecting.delete(id);
+    const connection = conns.get(id); conns.delete(id); connection?.close();
+    for (const registry of [calls, cameraCalls, incomingScreens, incomingCameras]) {
+      const call = registry.get(id); registry.delete(id); call?.close();
+    }
+    names.delete(id); awayIds.delete(id); stoppedCameras.delete(id);
+    streaming.remove(id); receiverPreferences.delete(id);
+    dropTile(id); dropTile(id + ":camera"); tuneScreenSenders();
+    if (game?.duel && game.foe === id) game.endDuel?.("A pessoa saiu da sala.");
+  }
+  function finishRoom(reason, message) {
+    if (ended) return;
+    ended = true;
+    timers.forEach(clearInterval); timers.clear();
+    stop(); stopCamera(); streaming.stop();
+    removeEventListener("visibilitychange", updateStreamingPreferences);
+    removeEventListener("fullscreenchange", updateStreamingPreferences);
+    [...conns.keys()].forEach(disconnectMember);
+    hub?.conns.forEach(c => c.close()); hub?.peer.destroy(); hubConn?.close(); peer.destroy();
+    $("room").classList.add("hidden");
+    $("home").classList.remove("hidden");
+    $("lede").textContent = message || "Você saiu da sala. Abra o link novamente para voltar.";
+    $("go").textContent = "Criar outra sala";
+    $("go").disabled = false;
+    $("enter").onsubmit = e => { e.preventDefault(); location.assign(location.pathname); };
+  }
+  function connectMembers() {
+    if (ended) return;
+    roomMembers.forEach(id => {
+      if (id !== myId && myId < id && !conns.has(id) && !connecting.has(id)) link(id);
+    });
+  }
+  function publishDirectory() {
+    if (!hub || ended) return;
+    const ids = [...hub.conns.keys()];
+    hub.conns.forEach(connection => { if (connection.open) connection.send({ t: "peers", ids }); });
+  }
   function claimHub() {
-    if (hub || claiming) return;
+    if (ended || hub || claiming) return;
     claiming = true;
-    const h = new Peer(hubId);
-    h.on("open", () => { claiming = false; hub = { peer: h, conns: new Map(), sharers: new Set() }; joinHub(); });
-    h.on("disconnected", () => h.destroyed || h.reconnect());
-    h.on("error", e => { if (e.type === "unavailable-id") { claiming = false; h.destroy(); setTimeout(joinHub, 300); } });
-    h.on("connection", c => {
-      c.on("open", () => { watch(c); hub.conns.set(c.peer, c); c.send({ t: "peers", ids: [...hub.conns.keys()].filter(i => i !== c.peer) }); });
-      c.on("data", m => {
-        if (m.t === "sharing") hub.sharers.add(c.peer);
-        else if (m.t === "stop") hub.sharers.delete(c.peer);
-        else if (m.t === "want") {
-          const ok = hub.sharers.size < MAX || hub.sharers.has(c.peer);
-          if (ok) hub.sharers.add(c.peer);
-          c.send({ t: ok ? "grant" : "deny" });
+    const directory = new Peer(hubId);
+    directoryPeer = directory;
+    const releaseDirectory = () => {
+      if (directoryPeer !== directory) return;
+      directoryPeer = null; claiming = false;
+      if (hub?.peer === directory) { hub = null; sharers.clear(); }
+    };
+    directory.on("open", () => {
+      if (ended || directoryPeer !== directory) { directory.destroy(); return; }
+      claiming = false; hub = { peer: directory, conns: new Map() }; joinHub();
+    });
+    directory.on("close", releaseDirectory);
+    directory.on("disconnected", () => directory.destroyed || directory.reconnect());
+    directory.on("error", error => {
+      releaseDirectory(); directory.destroy();
+      if (error.type === "unavailable-id" && !ended) setTimeout(joinHub, 300);
+    });
+    directory.on("connection", connection => {
+      connection.on("open", () => {
+        if (ended || hub.conns.size >= 8) {
+          connection.send({ t: "full" }); setTimeout(() => connection.close(), 100); return;
+        }
+        watch(connection); hub.conns.set(connection.peer, connection); publishDirectory();
+      });
+      connection.on("data", message => {
+        if (!message || typeof message !== "object" || hub?.conns.get(connection.peer) !== connection) return;
+        if (message.t === "sharing") sharers.add(connection.peer);
+        else if (message.t === "stop") sharers.delete(connection.peer);
+        else if (message.t === "want") {
+          const allowed = sharers.has(connection.peer) || sharers.size < MAX;
+          if (allowed) sharers.add(connection.peer);
+          connection.send({ t: allowed ? "grant" : "deny" });
         }
       });
-      c.on("close", () => { hub.conns.delete(c.peer); hub.sharers.delete(c.peer); });
+      connection.on("close", () => {
+        if (hub?.conns.get(connection.peer) !== connection) return;
+        hub.conns.delete(connection.peer); sharers.delete(connection.peer); publishDirectory();
+      });
     });
   }
-  // Two people opening an empty room at once race for the directory; a connect to it can
-  // also hang silently. Whatever went wrong, keep retrying until we are attached.
-  setInterval(() => { if (myId && !claiming && !hubConn?.open) joinHub(); }, 3000);
   function joinHub() {
+    if (ended || claiming) return;
     const old = hubConn; hubConn = null; old?.close();
-    const c = peer.connect(hubId, { reliable: true });
-    hubConn = c;
-    c.on("open", () => { watch(c); if (stream) c.send({ t: "sharing" }); });
-    c.on("data", m => {
-      if (m.t === "peers") m.ids.forEach(id => { if (id !== myId && !conns.has(id)) link(id); });
-      else if (m.t === "grant") begin();
-      else if (m.t === "deny") alert(`Já tem ${MAX} pessoas mostrando a tela. Espera alguém parar.`);
+    const connection = peer.connect(hubId, { reliable: true }); hubConn = connection;
+    connection.on("open", () => { watch(connection); if (stream) connection.send({ t: "sharing" }); });
+    connection.on("data", message => {
+      if (!message || typeof message !== "object" || ended || hubConn !== connection) return;
+      if (message.t === "peers" && Array.isArray(message.ids) && message.ids.length <= 8 && message.ids.includes(myId)) {
+        roomMembers.clear();
+        message.ids.filter(id => typeof id === "string" && /^[A-Za-z0-9_-]{1,100}$/.test(id)).forEach(id => roomMembers.add(id));
+        for (const id of [...conns.keys(), ...connecting.keys()]) if (!roomMembers.has(id)) disconnectMember(id);
+        enterConnectedRoom(); connectMembers(); render();
+      } else if (message.t === "grant") begin();
+      else if (message.t === "deny") alert(`Já tem ${MAX} pessoas mostrando a tela. Espera alguém parar.`);
+      else if (message.t === "full") finishRoom("full", "A sala já tem oito pessoas. Espere alguém sair para entrar.");
     });
-    c.on("close", () => { if (hubConn !== c) return; hubConn = null; setTimeout(claimHub, 200 + Math.random() * 1500); });
+    connection.on("close", () => {
+      if (ended || hubConn !== connection) return;
+      hubConn = null; setTimeout(claimHub, 200 + Math.random() * 1500);
+    });
+    connection.on("error", () => connection.close());
   }
+  every(() => { if (myId && !claiming && !hubConn?.open) joinHub(); connectMembers(); }, 2000);
 
-  /* ---------- member mesh ---------- */
-  function link(id) { wire(peer.connect(id, { reliable: true })); }
+  function link(id) {
+    if (ended || !roomMembers.has(id) || connecting.has(id) || conns.has(id)) return;
+    const connection = peer.connect(id, { reliable: true });
+    connecting.set(id, connection); wire(connection);
+  }
   function wire(c) {
-    c.on("open", () => {
-      watch(c);
-      conns.set(c.peer, c);
-      c.send(hello());
+    if (ended || !roomMembers.has(c.peer) || conns.has(c.peer) || (connecting.has(c.peer) && connecting.get(c.peer) !== c)) { c.close(); return; }
+    connecting.set(c.peer, c);
+    const shareWithReadyMember = () => {
+      if (!connectedMember(c.peer) || !c.telaoReady || c.shared) return;
+      c.shared = true; clearTimeout(timeout); c.send(hello());
       if (stream) callPeer(c.peer);
       if (cameraStream) callCamera(c.peer);
       render();
+    };
+    const timeout = setTimeout(() => { if (!c.telaoReady) c.close(); }, 10000);
+    c.on("open", () => {
+      if (ended || !roomMembers.has(c.peer)) { c.close(); return; }
+      watch(c); connecting.delete(c.peer); conns.set(c.peer, c);
+      c.send({ t: "member-ready" }); shareWithReadyMember();
     });
     c.on("data", m => {
-      if (m.t === "hello") { names.set(c.peer, String(m.name).slice(0, 24)); notifOk.set(c.peer, m.notif === true); m.away === true ? awayIds.add(c.peer) : awayIds.delete(c.peer); render(); }
+      if (!connectedMember(c.peer) || conns.get(c.peer) !== c || !m || typeof m !== "object") return;
+      if (m.t === "member-ready") { c.telaoReady = true; shareWithReadyMember(); }
+      else if (m.t === "hello") { names.set(c.peer, String(m.name).slice(0, 24)); notifOk.set(c.peer, m.notif === true); m.away === true ? awayIds.add(c.peer) : awayIds.delete(c.peer); render(); }
+      else if (m.t === "stream-preference" && ["primary", "thumbnail", "hidden"].includes(m.preference)) {
+        receiverPreferences.set(c.peer, m.preference); streaming.setPreference(c.peer, m.preference);
+      }
       else if (m.t === "troll") onTroll(m, c.peer);
       else if (m.t === "stop") dropTile(c.peer);
       else if (m.t === "camera-stop" && Number.isSafeInteger(m.session)) {
@@ -790,31 +899,52 @@ function start(code) {
       else if (m.t === "gscore") onScore(m, c.peer);
       else if (["duel", "duelok", "duelno", "dpos", "dshot", "dhit", "ddie", "dleave"].includes(m.t)) onDuel(m, c.peer);
     });
-    c.on("close", () => { if (conns.get(c.peer) !== c) return; conns.delete(c.peer); calls.delete(c.peer); cameraCalls.get(c.peer)?.close(); cameraCalls.delete(c.peer); incomingCameras.get(c.peer)?.close(); incomingCameras.delete(c.peer); dropTile(c.peer + ":camera"); names.delete(c.peer); awayIds.delete(c.peer); dropTile(c.peer);
-      if (game?.duel && game.foe === c.peer) game.endDuel?.(`${nameOf(c.peer)} saiu da sala.`);
-      if (invite?.id === c.peer) { invite = null; lobby("A pessoa saiu da sala.", [["Fechar", closeGame, true]]); } });
-  }
-  function callPeer(id) {
-    if (!stream) return;
-    const call = peer.call(id, stream);
-    calls.set(id, call);
-    setTimeout(() => call.peerConnection?.getSenders().forEach(s => {
-      if (s.track?.kind !== "video") return;
-      const p = s.getParameters(); p.encodings = p.encodings?.length ? p.encodings : [{}];
-      p.encodings[0].maxBitrate = 3_000_000; p.degradationPreference = "maintain-resolution";
-      s.setParameters(p).catch(() => {});
-    }), 500);
+    c.on("close", () => {
+      clearTimeout(timeout);
+      if (connecting.get(c.peer) === c) connecting.delete(c.peer);
+      if (conns.get(c.peer) !== c) return;
+      disconnectMember(c.peer); render();
+    });
+    c.on("error", () => c.close());
   }
 
+  function callPeer(id) {
+    if (!stream || !connectedMember(id) || !conns.get(id).telaoReady) return;
+    const call = peer.call(id, stream);
+    calls.get(id)?.close();
+    calls.set(id, call);
+    streaming.add(id, call);
+    streaming.setPreference(id, receiverPreferences.get(id) || "primary");
+    call.on("close", () => {
+      if (calls.get(id) !== call) return;
+      calls.delete(id); streaming.remove(id, call);
+    });
+    call.on("error", () => call.close());
+    tuneScreenSenders();
+  }
+  function tuneScreenSenders() { streaming.refresh(); }
+  updateStreamingPreferences = () => {
+    const focus = document.fullscreenElement?.dataset?.id || (view.theater ? view.focus : null);
+    conns.forEach((connection, id) => {
+      if (!connectedMember(id) || !connection.telaoReady) return;
+      const preference = document.visibilityState === "hidden" && !document.pictureInPictureElement ? "hidden" : focus && focus !== id ? "thumbnail" : "primary";
+      if (sentPreferences.get(connection) === preference) return;
+      sentPreferences.set(connection, preference);
+      connection.send({ t: "stream-preference", preference });
+    });
+  };
+  addEventListener("visibilitychange", updateStreamingPreferences);
+  addEventListener("fullscreenchange", updateStreamingPreferences);
+
   function callCamera(id) {
-    if (!cameraStream) return;
+    if (!cameraStream || !connectedMember(id) || !conns.get(id).telaoReady) return;
     cameraCalls.get(id)?.close();
     const call = peer.call(id, cameraStream, { metadata: { kind: "camera", session: cameraSession } });
     cameraCalls.set(id, call);
   }
   function stopCamera() {
     cameraCancelled++;
-    clearInterval(cameraTimer); cameraTimer = null;
+    cameraSource?.stop(); cameraSource = null;
     cameraVideo?.pause(); if (cameraVideo) cameraVideo.srcObject = null; cameraVideo = null;
     cameraRaw?.getTracks().forEach(t => t.stop()); cameraRaw = null;
     cameraStream?.getTracks().forEach(t => t.stop()); cameraStream = null;
@@ -824,39 +954,45 @@ function start(code) {
     labelBtn("camera", "Ligar câmera"); $("camera").setAttribute("aria-pressed", "false");
     $("cameraEffects").classList.add("hidden"); $("cameraMirrorLabel").classList.add("hidden");
   }
+  function mirrorCamera() {
+    const video = tileOf("me:camera")?.querySelector("video");
+    if (video) video.style.transform = $("cameraMirror").checked ? "scaleX(-1)" : "";
+  }
+  $("cameraMirror").onchange = mirrorCamera;
+  $("cameraEffect").onchange = () => cameraSource?.setEffect($("cameraEffect").value).catch(() => toast("Não foi possível aplicar o efeito. Tente novamente."));
   $("camera").onclick = async () => {
+    if (ended || !roomEntered) return;
     if (cameraPending) return;
     if (cameraStream) return stopCamera();
     cameraPending = true; $("camera").disabled = true;
     const request = cameraCancelled;
     try {
       const raw = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24, max: 30 } }, audio: false });
-      if (request !== cameraCancelled || peer.destroyed) { raw.getTracks().forEach(t => t.stop()); return; }
+      if (request !== cameraCancelled || peer.destroyed || ended || !roomEntered) { raw.getTracks().forEach(t => t.stop()); return; }
       cameraRaw = raw; cameraSession++;
       cameraVideo = document.createElement("video"); cameraVideo.muted = true; cameraVideo.playsInline = true; cameraVideo.srcObject = cameraRaw;
       await cameraVideo.play();
-      if (request !== cameraCancelled || peer.destroyed) return;
-      const canvas = document.createElement("canvas"); canvas.width = 640; canvas.height = 480;
-      const ctx = canvas.getContext("2d", { alpha: false }), small = document.createElement("canvas"); small.width = 80; small.height = 60;
-      const tiny = small.getContext("2d");
-      const draw = () => {
-        if (!cameraVideo) return;
-        const effect = $("cameraEffect").value;
-        ctx.save();
-        if ($("cameraMirror").checked) { ctx.translate(640, 0); ctx.scale(-1, 1); }
-        ctx.filter = effect === "mono" ? "grayscale(1) contrast(1.2)" : effect === "vhs" ? "sepia(.4) saturate(1.5) contrast(1.1)" : effect === "neon" ? "hue-rotate(275deg) saturate(2.8) contrast(1.3)" : "none";
-        if (effect === "pixel") { tiny.drawImage(cameraVideo, 0, 0, 80, 60); ctx.imageSmoothingEnabled = false; ctx.drawImage(small, 0, 0, 640, 480); }
-        else ctx.drawImage(cameraVideo, 0, 0, 640, 480);
-        ctx.restore();
-        if (effect === "vhs") {
-          ctx.fillStyle = "rgba(0,0,0,.18)"; for (let y = 0; y < 480; y += 4) ctx.fillRect(0, y, 640, 1);
-          ctx.fillStyle = "white"; ctx.font = "bold 20px monospace"; ctx.fillText("REC ● TROPA CAM", 20, 32);
-        }
-      };
-      draw(); cameraTimer = setInterval(draw, 1000 / 24);
-      cameraStream = canvas.captureStream(24);
+      if (request !== cameraCancelled || peer.destroyed || ended || !roomEntered) return;
+      cameraStream = raw;
+      cameraSource = TelaoCamera.createCameraSource({
+        raw, video: cameraVideo,
+        onTrack: async (track, nextStream) => {
+          if (request !== cameraCancelled || ended || !roomEntered) return;
+          cameraStream = nextStream;
+          await Promise.all([...cameraCalls.values()].map(async call => {
+            const sender = call.peerConnection?.getSenders().find(item => item.track?.kind === "video");
+            if (!sender || !connectedMember(call.peer)) return;
+            try { await sender.replaceTrack(track); }
+            catch { if (cameraCalls.get(call.peer) === call && connectedMember(call.peer)) callCamera(call.peer); }
+          }));
+          if (request !== cameraCancelled || ended || !roomEntered) return;
+          addTile("me:camera", nextStream); mirrorCamera();
+        },
+      });
+      await cameraSource.setEffect($("cameraEffect").value);
+      if (request !== cameraCancelled || ended || !roomEntered) return;
       cameraRaw.getVideoTracks()[0].onended = stopCamera;
-      addTile("me:camera", cameraStream); conns.forEach((_, id) => callCamera(id));
+      addTile("me:camera", cameraStream); mirrorCamera(); conns.forEach((_, id) => callCamera(id));
       labelBtn("camera", "Desligar câmera"); $("camera").setAttribute("aria-pressed", "true");
       $("cameraEffects").classList.remove("hidden"); $("cameraMirrorLabel").classList.remove("hidden");
     } catch (e) {
@@ -865,11 +1001,17 @@ function start(code) {
     } finally { cameraPending = false; $("camera").disabled = false; }
   };
 
-  $("share").onclick = () => hubConn?.open ? hubConn.send({ t: "want" }) : alert("Ainda conectando na sala. Tenta de novo em um segundo.");
+  $("share").onclick = () => {
+    if (ended || !roomEntered || stream || $("share").disabled) return;
+    if (hubConn?.open) hubConn.send({ t: "want" });
+  };
   async function begin() {
+    if (ended || !roomEntered || stream || $("share").disabled) return;
     $("share").disabled = true;
+    screenProfile = screenProfiles[$("streamQuality").value] || screenProfiles.game;
+    streaming.setProfile(screenProfile);
     try { stream = await navigator.mediaDevices.getDisplayMedia({
-      video: { frameRate: { ideal: 30 } },
+      video: { width: { ideal: screenProfile.width, max: screenProfile.width }, height: { ideal: screenProfile.height, max: screenProfile.height }, frameRate: { ideal: screenProfile.fps, max: screenProfile.fps } },
       audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, suppressLocalAudioPlayback: false },
       // System audio would carry the Discord call. A tab's audio, or a program window's own
       // audio where Chrome can capture it, may go out; never the whole PC's.
@@ -877,7 +1019,8 @@ function start(code) {
       windowAudio: "window",
       selfBrowserSurface: "exclude",
     }); }
-    catch { $("share").disabled = false; hubConn?.send({ t: "stop" }); return; }
+    catch { $("share").disabled = false; sharers.delete(myId); hubConn?.send({ t: "stop" }); return; }
+    if (ended || !roomEntered) { stream.getTracks().forEach(track => track.stop()); stream = null; return; }
     $("share").disabled = false;
     const t = stream.getVideoTracks()[0];
     const surface = t.getSettings().displaySurface;
@@ -886,7 +1029,8 @@ function start(code) {
       : surface === "browser" ? "Sem som: marque “Compartilhar áudio da guia” no seletor."
       : surface === "window" ? "Sem som: este Chrome ainda não captura o som de um programa. Atualize o Chrome ou compartilhe uma aba."
       : "Sem som: a tela inteira vai muda para o Discord não vazar. Compartilhe a janela do jogo ou uma aba.");
-    t.contentHint = "detail"; t.onended = stop;
+    t.contentHint = screenProfile.motion ? "motion" : "detail"; t.onended = stop;
+    $("streamQuality").disabled = true;
     $("share").classList.add("hidden"); $("stop").classList.remove("hidden");
     addTile("me", stream);
     conns.forEach((_, id) => callPeer(id));
@@ -896,9 +1040,11 @@ function start(code) {
   function stop() {
     if (!stream) return;
     stream.getTracks().forEach(t => t.stop()); stream = null;
+    streaming.stop();
     calls.forEach(c => c.close()); calls.clear();
     conns.forEach(c => c.send({ t: "stop" }));
-    hubConn?.send({ t: "stop" }); dropTile("me"); note("");
+    sharers.delete(myId); hubConn?.send({ t: "stop" }); dropTile("me"); note("");
+    $("streamQuality").disabled = false;
     $("stop").classList.add("hidden"); $("share").classList.remove("hidden");
   }
 
@@ -909,8 +1055,8 @@ function start(code) {
     announce();
     render();
   };
-  broadcast = msg => conns.forEach(c => c.open && c.send(msg));
-  sendTo = (id, msg) => { const c = conns.get(id); if (c?.open) c.send(msg); };
+  broadcast = msg => conns.forEach(c => connectedMember(c.peer) && c.send(msg));
+  sendTo = (id, msg) => { const c = conns.get(id); if (c?.open && connectedMember(id)) c.send(msg); };
   announce = () => broadcast(hello());
   toWire = id => id === "me" ? myId : id === "me:camera" ? myId + ":camera" : id;
   fromWire = id => id === myId ? "me" : id === myId + ":camera" ? "me:camera" : id;
@@ -923,6 +1069,7 @@ function start(code) {
     $("myLabel").textContent = myName; $("myAv").textContent = (myName[0] || "?").toUpperCase(); $("myAv").style.background = color(myName);
     const box = $("members"); box.replaceChildren();
     for (const p of people) box.appendChild(member(p));
+    updateStreamingPreferences();
     document.querySelectorAll(".tile").forEach(t => {
       const owner = t.dataset.id.replace(/:camera$/, "");
       t.querySelector(".name").textContent = (owner === "me" ? `${myName} (você)` : names.get(owner) || "conectando…") + (t.hasAttribute("data-camera") ? "" : " · tela");
@@ -1804,6 +1951,7 @@ function layout() {
   if (!tiles.some(t => t.dataset.id === view.focus)) view.focus = tiles.find(t => t.dataset.id !== "me")?.dataset.id || tiles[0]?.dataset.id || null;
   tiles.forEach(t => t.classList.toggle("focus", view.theater && t.dataset.id === view.focus));
   $("room").classList.toggle("solo", tiles.length <= 1);
+  updateStreamingPreferences();
 }
 function fullscreen(t) { document.fullscreenElement ? document.exitFullscreen() : t.requestFullscreen(); }
 $("theater").onclick = () => theater(!view.theater);
