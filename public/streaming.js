@@ -186,7 +186,36 @@
     return lines.join(eol);
   }
 
-  const api = { createStreamController, chooseEncoding, allocateEncodings, preferH264 };
+  // Reads the main video stream of one connection out of a getStats() report. Pass the previous
+  // result back in to get the bitrate between the two samples.
+  function readVideoStats(report, previous) {
+    const codecs = new Map(), rtps = [];
+    report.forEach(stat => {
+      if (stat.type === "codec") codecs.set(stat.id, stat.mimeType);
+      else if ((stat.type === "outbound-rtp" || stat.type === "inbound-rtp") && !stat.isRemote && (stat.kind || stat.mediaType) === "video") rtps.push(stat);
+    });
+    const rtp = rtps.sort((a, b) => (b.frameWidth || 0) - (a.frameWidth || 0))[0];
+    if (!rtp) return null;
+    const sending = rtp.type === "outbound-rtp";
+    const bytes = (sending ? rtp.bytesSent : rtp.bytesReceived) || 0;
+    const before = previous?.id === rtp.id && rtp.timestamp > previous.timestamp ? previous : null;
+    const implementation = (sending ? rtp.encoderImplementation : rtp.decoderImplementation) || null;
+    const efficient = sending ? rtp.powerEfficientEncoder : rtp.powerEfficientDecoder;
+    // Chrome hides these two fields unless the page is capturing, so both can be missing.
+    const hardware = typeof efficient === "boolean" ? efficient
+      : implementation ? !/libvpx|openh264|dav1d|libaom|ffmpeg|fallback/i.test(implementation) : null;
+    return {
+      id: rtp.id, timestamp: rtp.timestamp, bytes, sending,
+      codec: (codecs.get(rtp.codecId) || "").replace(/^video\//i, "") || null,
+      implementation, hardware,
+      fps: Number.isFinite(rtp.framesPerSecond) ? Math.round(rtp.framesPerSecond) : null,
+      width: rtp.frameWidth || null, height: rtp.frameHeight || null,
+      kbps: before ? Math.max(0, Math.round((bytes - before.bytes) * 8 / (rtp.timestamp - before.timestamp))) : null,
+      limit: sending ? rtp.qualityLimitationReason || null : null,
+    };
+  }
+
+  const api = { createStreamController, chooseEncoding, allocateEncodings, preferH264, readVideoStats };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.TelaoStreaming = api;
 })(globalThis);

@@ -241,3 +241,22 @@ test('preferH264 moves H.264 ahead of VP8 and keeps every codec', () => {
   assert.equal(preferH264('m=video 9 X 96\r\na=rtpmap:96 VP8/90000\r\n'), 'm=video 9 X 96\r\na=rtpmap:96 VP8/90000\r\n');
   assert.equal(preferH264(undefined), undefined);
 });
+
+test("readVideoStats reports codec, hardware, fps, limit and bitrate between samples", () => {
+  const { readVideoStats } = require("../public/streaming.js");
+  const report = (bytes, timestamp) => new Map([
+    ["c1", { type: "codec", id: "c1", mimeType: "video/H264" }],
+    ["a", { type: "outbound-rtp", id: "a", kind: "audio", bytesSent: 999 }],
+    ["v", { type: "outbound-rtp", id: "v", kind: "video", codecId: "c1", bytesSent: bytes, timestamp, framesPerSecond: 59.6, frameWidth: 1280, frameHeight: 720, encoderImplementation: "ExternalEncoder", qualityLimitationReason: "cpu" }],
+  ]);
+  const first = readVideoStats(report(0, 1000));
+  assert.equal(first.kbps, null);
+  const second = readVideoStats(report(500_000, 2000), first);
+  assert.deepEqual(
+    { codec: second.codec, hardware: second.hardware, fps: second.fps, width: second.width, kbps: second.kbps, limit: second.limit, sending: second.sending },
+    { codec: "H264", hardware: true, fps: 60, width: 1280, kbps: 4000, limit: "cpu", sending: true });
+  const software = new Map([["v", { type: "inbound-rtp", id: "v", kind: "video", bytesReceived: 1, timestamp: 1, decoderImplementation: "libvpx" }]]);
+  assert.equal(readVideoStats(software).hardware, false);
+  assert.equal(readVideoStats(software).limit, null);
+  assert.equal(readVideoStats(new Map()), null);
+});

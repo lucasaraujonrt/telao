@@ -227,6 +227,8 @@ input[type=range]{accent-color:var(--papel);min-width:0}
 .arsenal .arm[aria-pressed=true]{background:var(--rosa)}
 .arsenal .sep{width:2px;height:22px;background:var(--noite2);margin:0 4px}
 .tile .fx{position:absolute;pointer-events:none;overflow:hidden}
+.tile .diag{position:absolute;left:8px;top:8px;z-index:2;max-width:calc(100% - 16px);background:#000c;color:#fff;font:500 12px/1.45 Archivo,sans-serif;padding:6px 8px;border-radius:4px;pointer-events:none;white-space:pre-line}
+.tile .diag .bad{color:#ff8a8a}
 body[data-armed=tomate] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Ctext x='2' y='28' font-size='28'%3E%F0%9F%8D%85%3C/text%3E%3C/svg%3E") 18 18,crosshair}
 body[data-armed=ovo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Ctext x='2' y='28' font-size='28'%3E%F0%9F%A5%9A%3C/text%3E%3C/svg%3E") 18 18,crosshair}
 body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Ctext x='2' y='28' font-size='28'%3E%F0%9F%A9%B4%3C/text%3E%3C/svg%3E") 18 18,crosshair}
@@ -323,7 +325,7 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
 .recibo .bye{text-align:center}
 #room.tiger #grid{filter:saturate(1.35) sepia(.2)}
 #room.pod #grid{animation:podhue 2.6s linear infinite,beat .47s ease-in-out infinite}
-#room.weed #grid{animation:baked 7s ease-in-out infinite;filter:url(#wobble) saturate(1.5) contrast(.92)}
+#room.weed #grid{animation:baked 7s ease-in-out infinite;filter:saturate(1.5) contrast(.92)}
 @keyframes podhue{from{filter:hue-rotate(0) saturate(1.6)}to{filter:hue-rotate(360deg) saturate(1.6)}}
 @keyframes beat{50%{scale:1.012}}
 @keyframes baked{0%,100%{rotate:0deg;scale:1;translate:0 0}25%{rotate:-.8deg;scale:1.02;translate:-6px 4px}50%{rotate:.6deg;scale:1.035;translate:5px -3px}75%{rotate:-.4deg;scale:1.015;translate:-3px -5px}}
@@ -533,6 +535,7 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
       <span id="note" class="note hidden"></span>
       <div class="camopts"><label id="cameraEffects" class="hidden">Efeito <select id="cameraEffect" aria-label="Efeito da câmera"><option value="normal">Normal</option><option value="mono">Cinema P&amp;B</option><option value="vhs">VHS da tropa</option><option value="neon">Neon</option><option value="pixel">Pixelado</option></select></label><label id="cameraMirrorLabel" class="hidden"><input id="cameraMirror" type="checkbox" checked> Espelhar</label></div>
       <label class="stream-quality">Transmissão <select id="streamQuality"><option value="game">Jogos · 720p / 60 fps</option><option value="detail">Texto · 1080p / 30 fps</option><option value="light">Leve · 720p / 30 fps</option></select></label>
+      <label class="stream-quality"><input id="diag" type="checkbox"> Mostrar diagnóstico nas telas</label>
       <div class="calls">
         <button id="camera" class="call" aria-pressed="false" title="Ligar câmera" aria-label="Ligar câmera"><svg class="ic" aria-hidden="true"><use href="#i-video"/></svg></button>
         <button id="share" class="call" title="Mostrar minha tela" aria-label="Mostrar minha tela"><svg class="ic" aria-hidden="true"><use href="#i-screen"/></svg></button>
@@ -642,9 +645,6 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
   <canvas id="haze" aria-hidden="true"></canvas>
   <div id="modeFx" aria-hidden="true"></div>
   <div id="trollPop" class="hidden" role="dialog" aria-label="Atrapalhar"></div>
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-    <filter id="wobble"><feTurbulence id="turb" type="fractalNoise" baseFrequency="0.006 0.009" numOctaves="2" seed="4"/><feDisplacementMap in="SourceGraphic" scale="16" xChannelSelector="R" yChannelSelector="G"/></filter>
-  </svg>
 </div>
 
 <script src="streaming.js"></script>
@@ -943,6 +943,39 @@ function start(code) {
   addEventListener("visibilitychange", updateStreamingPreferences);
   addEventListener("fullscreenchange", updateStreamingPreferences);
 
+  // Per-tile readout of what WebRTC is doing, so a slow stream says whether CPU or network is the cause.
+  const diagSamples = new WeakMap();
+  const sampleCall = async call => {
+    const report = await call.peerConnection?.getStats().catch(() => null);
+    if (!report) return null;
+    const result = TelaoStreaming.readVideoStats(report, diagSamples.get(call));
+    if (result) diagSamples.set(call, result);
+    return result;
+  };
+  async function diagnose() {
+    if (!$("diag").checked || ended) return;
+    const rows = [...incomingScreens].map(([id, call]) => [id, [call]]);
+    if (calls.size) rows.push(["me", [...calls.values()]]);
+    const shown = new Set();
+    for (const [id, list] of rows) {
+      const stats = (await Promise.all(list.map(sampleCall))).filter(Boolean);
+      const tile = tileOf(id);
+      if (!tile || !stats.length || !$("diag").checked) continue;
+      shown.add(tile);
+      let box = tile.querySelector(".diag");
+      if (!box) { box = document.createElement("div"); box.className = "diag"; tile.append(box); }
+      box.replaceChildren(...diagLines(stats));
+    }
+    document.querySelectorAll(".tile .diag").forEach(box => { if (!shown.has(box.parentElement)) box.remove(); });
+  }
+  every(diagnose, 2000);
+  $("diag").checked = store.get("telao-diag") === "1";
+  $("diag").onchange = () => {
+    store.set("telao-diag", $("diag").checked ? "1" : "0");
+    if (!$("diag").checked) document.querySelectorAll(".tile .diag").forEach(box => box.remove());
+    else diagnose();
+  };
+
   function callCamera(id) {
     if (!cameraStream || !peer.open || !connectedMember(id) || !conns.get(id).telaoReady) return;
     cameraCalls.get(id)?.close();
@@ -1105,6 +1138,21 @@ function enterRoom(code) {
 // while the server still holds the old socket, and loop.
 function retryServer(p) {
   setTimeout(() => { if (p.disconnected && !p.destroyed) try { p.reconnect(); } catch {} }, 1500 + Math.random() * 1500);
+}
+const LIMITS = { cpu: "limitado pelo processador", bandwidth: "limitado pela rede", other: "limitado (outro motivo)" };
+function diagLines(stats) {
+  const first = stats[0], sending = first.sending;
+  const kbps = stats.reduce((sum, s) => sum + (s.kbps || 0), 0);
+  const verb = sending ? "codifica" : "decodifica";
+  const where = first.hardware === true ? `${verb} na placa de vídeo` : first.hardware === false ? `${verb} no processador` : "placa de vídeo ou processador: o Chrome não informa";
+  const limited = stats.map(s => s.limit).find(limit => LIMITS[limit]);
+  const line = (text, bad) => Object.assign(document.createElement("div"), { textContent: text, className: bad ? "bad" : "" });
+  return [
+    line(sending ? `Enviando ${stats.length} ${stats.length === 1 ? "cópia" : "cópias"}` : "Recebendo"),
+    line(`${first.codec || "codec ?"} · ${where}`, first.hardware === false),
+    line(`${first.width && first.height ? `${first.width}×${first.height}` : "?"} · ${first.fps ?? "?"} fps · ${(kbps / 1000).toFixed(1)} Mbps${sending && stats.length > 1 ? " no total" : ""}`),
+    ...(sending ? [line(limited ? LIMITS[limited] : "sem limite", !!limited)] : []),
+  ];
 }
 function watch(c) {
   const pc = c.peerConnection; if (!pc) return;
@@ -1741,7 +1789,6 @@ function props(name, reels, cobra, auraResult) {
       card.animate([{ transform: "scale(2.2) rotate(18deg)", opacity: 0 }, { transform: "scale(.94)", opacity: 1, offset: .7 }, { transform: "scale(1)" }], { duration: 380, easing: "ease-in" });
       sfx("chinelo");
     }, at));
-    wobble();
   }
 }
 
@@ -1828,19 +1875,6 @@ function rain(box) {
     box.append(c);
     c.animate([{ transform: "translateY(-10vh) rotate(0)" }, { transform: `translateY(110vh) rotate(${Math.random() * 720 - 360}deg)` }], { duration: 1600 + Math.random() * 1400, easing: "cubic-bezier(.4,0,.8,1)" }).onfinish = () => c.remove();
   }, i * 70);
-}
-
-// Animates the SVG turbulence that warps the room during 4:20.
-function wobble() {
-  const turb = document.getElementById("turb"), t0 = performance.now();
-  const step = () => {
-    if (mode !== "weed") return;
-    const t = (performance.now() - t0) / 1000;
-    turb.setAttribute("baseFrequency", `${(.006 + .002 * Math.sin(t * .7)).toFixed(4)} ${(.009 + .003 * Math.cos(t * .5)).toFixed(4)}`);
-    turb.setAttribute("seed", Math.floor(t * 4) % 50);
-    setTimeout(step, 120);
-  };
-  step();
 }
 
 // One fragment shader, two looks: neon vapor swirls (pod) or thick rising smoke (weed).
