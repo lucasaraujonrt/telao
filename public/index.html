@@ -684,6 +684,7 @@ if (code) {
   $("go").textContent = "Entrar na sala";
 }
 $("nick").focus();
+if (document.wasDiscarded) setTimeout(() => toast("O Chrome descarregou esta aba para poupar memória. Em chrome://settings/performance, adicione este site em \"Sempre manter ativos\"."), 1500);
 $("enter").onsubmit = e => {
   e.preventDefault();
   myName = $("nick").value.trim().slice(0, 24) || "Anônimo";
@@ -720,7 +721,7 @@ function start(code) {
   peer.on("open", id => { myId = id; joinHub(); });
   addEventListener("pagehide", () => finishRoom("closed"));
   window.telaoDebug = () => ({ me: myId, hosting: !!hub, state: ended ? "closed" : roomEntered ? "connected" : "connecting", members: [...conns.keys()] });
-  peer.on("disconnected", () => peer.destroyed || peer.reconnect());
+  peer.on("disconnected", () => retryServer(peer));
   peer.on("error", error => {
     if (error.type === "peer-unavailable") { if (String(error.message).includes(hubId)) claimHub(); return; }
     if (error.type !== "disconnected" && error.type !== "network") console.warn("peer", error.type);
@@ -803,8 +804,11 @@ function start(code) {
       claiming = false; hub = { peer: directory, conns: new Map() }; joinHub();
     });
     directory.on("close", releaseDirectory);
-    directory.on("disconnected", () => directory.destroyed || directory.reconnect());
+    directory.on("disconnected", () => retryServer(directory));
     directory.on("error", error => {
+      // A signalling blip on the live hub is not fatal: its data channels stay up and it reconnects.
+      // Step down only if the claim never opened or someone else now owns the room id.
+      if (hub?.peer === directory && error.type !== "unavailable-id") return;
       releaseDirectory(); directory.destroy();
       if (error.type === "unavailable-id" && !ended) setTimeout(joinHub, 300);
     });
@@ -832,15 +836,18 @@ function start(code) {
     });
   }
   function joinHub() {
-    if (ended || claiming) return;
+    if (ended || claiming || !peer.open) return;
     const old = hubConn; hubConn = null; old?.close();
     const connection = peer.connect(hubId, { reliable: true }); hubConn = connection;
     connection.on("open", () => { watch(connection); if (stream) connection.send({ t: "sharing" }); });
     connection.on("data", message => {
       if (!message || typeof message !== "object" || ended || hubConn !== connection) return;
       if (message.t === "peers" && Array.isArray(message.ids) && message.ids.length <= 8 && message.ids.includes(myId)) {
+        // A newly claimed hub lists people as they come back, so never drop a member whose
+        // direct connection is still open; watch() closes the ones that are really gone.
         roomMembers.clear();
         message.ids.filter(id => typeof id === "string" && /^[A-Za-z0-9_-]{1,100}$/.test(id)).forEach(id => roomMembers.add(id));
+        conns.forEach((c, id) => { if (c.open) roomMembers.add(id); });
         for (const id of [...conns.keys(), ...connecting.keys()]) if (!roomMembers.has(id)) disconnectMember(id);
         enterConnectedRoom(); connectMembers(); render();
       } else if (message.t === "grant") begin();
@@ -856,7 +863,7 @@ function start(code) {
   every(() => { if (myId && !claiming && !hubConn?.open) joinHub(); connectMembers(); }, 2000);
 
   function link(id) {
-    if (ended || !roomMembers.has(id) || connecting.has(id) || conns.has(id)) return;
+    if (ended || !peer.open || !roomMembers.has(id) || connecting.has(id) || conns.has(id)) return;
     const connection = peer.connect(id, { reliable: true });
     connecting.set(id, connection); wire(connection);
   }
@@ -909,7 +916,7 @@ function start(code) {
   }
 
   function callPeer(id) {
-    if (!stream || !connectedMember(id) || !conns.get(id).telaoReady) return;
+    if (!stream || !peer.open || !connectedMember(id) || !conns.get(id).telaoReady) return;
     const call = peer.call(id, stream, { sdpTransform: TelaoStreaming.preferH264 });
     calls.get(id)?.close();
     calls.set(id, call);
@@ -937,7 +944,7 @@ function start(code) {
   addEventListener("fullscreenchange", updateStreamingPreferences);
 
   function callCamera(id) {
-    if (!cameraStream || !connectedMember(id) || !conns.get(id).telaoReady) return;
+    if (!cameraStream || !peer.open || !connectedMember(id) || !conns.get(id).telaoReady) return;
     cameraCalls.get(id)?.close();
     const call = peer.call(id, cameraStream, { metadata: { kind: "camera", session: cameraSession } });
     cameraCalls.set(id, call);
@@ -1094,6 +1101,11 @@ function enterRoom(code) {
 }
 
 // PeerJS rarely fires "close" when the other tab just vanishes; the ICE state does change.
+// Reconnect to the signalling server after a short pause; an immediate retry can hit "ID taken"
+// while the server still holds the old socket, and loop.
+function retryServer(p) {
+  setTimeout(() => { if (p.disconnected && !p.destroyed) try { p.reconnect(); } catch {} }, 1500 + Math.random() * 1500);
+}
 function watch(c) {
   const pc = c.peerConnection; if (!pc) return;
   let timer;
@@ -1101,7 +1113,7 @@ function watch(c) {
     clearTimeout(timer);
     const st = pc.connectionState;
     if (st === "failed" || st === "closed") c.close();
-    else if (st === "disconnected") timer = setTimeout(() => c.close(), 3000);
+    else if (st === "disconnected") timer = setTimeout(() => c.close(), 15000);
   });
 }
 
