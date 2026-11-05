@@ -910,7 +910,7 @@ function start(code) {
 
   function callPeer(id) {
     if (!stream || !connectedMember(id) || !conns.get(id).telaoReady) return;
-    const call = peer.call(id, stream);
+    const call = peer.call(id, stream, { sdpTransform: TelaoStreaming.preferH264 });
     calls.get(id)?.close();
     calls.set(id, call);
     streaming.add(id, call);

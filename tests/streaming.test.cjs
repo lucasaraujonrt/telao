@@ -226,3 +226,18 @@ test('a rejected pending update does not hide concurrent writes or poison later 
   assert.equal(call.applied[0].encodings[0].maxFramerate, 2);
   controller.stop();
 });
+
+test('preferH264 moves H.264 ahead of VP8 and keeps every codec', () => {
+  const { preferH264 } = require('../public/streaming.js');
+  const sdp = ['v=0', 'm=audio 9 UDP/TLS/RTP/SAVPF 111', 'a=rtpmap:111 opus/48000/2',
+    'm=video 9 UDP/TLS/RTP/SAVPF 96 97 102 103 104',
+    'a=rtpmap:96 VP8/90000', 'a=rtpmap:97 rtx/90000',
+    'a=rtpmap:102 H264/90000', 'a=fmtp:102 profile-level-id=640c1f;packetization-mode=1',
+    'a=rtpmap:103 H264/90000', 'a=fmtp:103 profile-level-id=42e01f;packetization-mode=1',
+    'a=rtpmap:104 rtx/90000', ''].join('\r\n');
+  const out = preferH264(sdp);
+  assert.match(out, /m=video 9 UDP\/TLS\/RTP\/SAVPF 103 102 96 97 104\r\n/);
+  assert.match(out, /m=audio 9 UDP\/TLS\/RTP\/SAVPF 111\r\n/);
+  assert.equal(preferH264('m=video 9 X 96\r\na=rtpmap:96 VP8/90000\r\n'), 'm=video 9 X 96\r\na=rtpmap:96 VP8/90000\r\n');
+  assert.equal(preferH264(undefined), undefined);
+});

@@ -155,7 +155,38 @@
     return { setProfile, add, setPreference, remove, stop, refresh, sample };
   }
 
-  const api = { createStreamController, chooseEncoding, allocateEncodings };
+  // Chrome offers VP8 first, which most PCs encode and decode on the CPU. H.264 usually runs on
+  // the graphics chip, so moving it to the front of the video line cuts CPU for sharer and viewers.
+  // Every other codec stays in the offer, so a browser without H.264 still connects.
+  function preferH264(sdp) {
+    if (typeof sdp !== "string") return sdp;
+    const eol = sdp.includes("\r\n") ? "\r\n" : "\n";
+    const lines = sdp.split(eol);
+    const start = lines.findIndex(line => line.startsWith("m=video "));
+    if (start < 0) return sdp;
+    const end = lines.findIndex((line, i) => i > start && line.startsWith("m="));
+    const section = lines.slice(start, end < 0 ? lines.length : end);
+    const h264 = new Set();
+    for (const line of section) {
+      const match = /^a=rtpmap:(\d+) H264\//.exec(line);
+      if (match) h264.add(match[1]);
+    }
+    if (!h264.size) return sdp;
+    // Constrained baseline (42e0xx) is the profile hardware handles best, so it leads the H.264 group.
+    const baseline = new Set();
+    for (const line of section) {
+      const match = /^a=fmtp:(\d+) .*profile-level-id=42e0/i.exec(line);
+      if (match && h264.has(match[1])) baseline.add(match[1]);
+    }
+    const parts = lines[start].split(" ");
+    const payloads = parts.slice(3);
+    const rank = pt => baseline.has(pt) ? 0 : h264.has(pt) ? 1 : 2;
+    const sorted = payloads.map((pt, i) => [pt, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(([pt]) => pt);
+    lines[start] = [...parts.slice(0, 3), ...sorted].join(" ");
+    return lines.join(eol);
+  }
+
+  const api = { createStreamController, chooseEncoding, allocateEncodings, preferH264 };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.TelaoStreaming = api;
 })(globalThis);
