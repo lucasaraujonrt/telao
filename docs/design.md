@@ -231,7 +231,10 @@ Stage:
 
 - The stage has 8 px inner padding, so tiles sit 8 from its edge and 8 from each other.
 - **Screens** take the stage. One screen fills it at 16:9, letterboxed on black. Two sit side by side. Three or four make a 2 × 2 grid (with three, the third spans one cell and the fourth cell stays black, so tiles keep their size when a fourth arrives).
-- **Cameras** dock in a strip under the screens: 16:9 tiles 112 px tall, left-aligned, 8 px gaps. When nobody shares a screen, cameras fill the stage with the same grid rules as screens.
+- **Cameras** dock in a strip under the screens: 16:9 tiles 112 px tall, left-aligned, 8 px gaps. When nobody else shares a screen, cameras fill the stage with the same grid rules as screens.
+- **Your own share** never takes the stage. It is a small 16:9 card at the start of the strip (centered on the stage when nothing else is on it). Hidden by default: a `--surface` card with the tally dot, "Você está ao vivo" and "Ver minha tela", and no `<video>` mounted. Shown: a thumbnail tile "Sua tela" with "Esconder minha tela" and "Parar de mostrar" on hover; a click focuses it in Destaque. The choice persists in `telao-self-view`.
+- **Resizing** (Grade). The 8 px gaps between screens, and the gap above the strip, are resizable panel handles (shadcn `Resizable`): invisible until hover, then a 2 px `--border-strong` line, `--accent` while dragging or focused. Arrow keys move a focused handle; a double click resets it. The strip handle sets the camera size (88 px up to half the stage). Sizes are saved per shape (rows by columns, and the strip) in `telao-layout-*`, not per person. "Restaurar tamanhos" in Ajustes clears them.
+- **Thumbnail quality.** Any screen tile drawn narrower than 360 px is reported to the core as a thumbnail through `setViewing`, so its sender lowers the quality, the same as the theater strip.
 - **Empty** (no screens, no cameras): the empty state, centered.
 - **Connecting** (`status.kind === 'connecting'`): the stage shows "Entrando na sala…" centered in `--text-2` with a small spinner. The dock is visible but disabled.
 
@@ -241,7 +244,8 @@ Dock (floating pill, `--surface` at 88% opacity with `backdrop-filter: blur(20px
 2. Camera control: icon button plus chevron segment that opens the camera popover (effect, mirror).
 3. Deafen all: icon button, pressed state when everything is muted.
 4. Settings: icon button that opens the settings popover (diagnostics switch).
-5. Phase 3 toolbar slot, after a divider (see "Phase 3").
+5. Layout, after a divider: a segmented control "Grade" / "Destaque". Hidden on narrow screens and on an empty stage.
+6. Phase 3 toolbar slot, after a divider (see "Phase 3").
 
 The dock fades to 0 opacity after 3 s without pointer movement over the stage, and returns on any pointer movement or keyboard focus inside the room. It never hides while a popover is open or while focus is inside it.
 
@@ -265,7 +269,7 @@ The heading is `title`, the line is `body` in `--text-2`, and the button is prim
 
 ### Room, theater
 
-Theater mode focuses one tile. The sidebar collapses to 0 (it slides out), the focused tile fills the stage, and the other tiles sit in a 96 px strip along the stage foot, above the dock, fading out with the dock. `T` toggles it. `Esc` leaves it. It calls `setViewing({ hidden, focus: key })`.
+Theater mode ("Destaque" in the UI) focuses one tile. A single click on a grid tile opens it, and the dock's "Grade" segment returns. The sidebar collapses to 0 (it slides out), the focused tile fills the stage, and the other tiles sit in a 96 px strip along the stage foot, above the dock, fading out with the dock. `T` toggles it. `Esc` leaves it. It calls `setViewing({ hidden, focus: key })`.
 
 ```
 +--------------------------------------------------------------------------+
@@ -280,7 +284,7 @@ Theater mode focuses one tile. The sidebar collapses to 0 (it slides out), the f
 +--------------------------------------------------------------------------+
 ```
 
-In theater the dock gains one more button, "Sair do modo teatro". Fullscreen uses the browser Fullscreen API on a single tile (double-click or the tile's fullscreen button). It also calls `setViewing` with that tile as `focus`.
+The dock's layout switch shows "Destaque" selected; "Grade" or Esc leaves it. Fullscreen uses the browser Fullscreen API on a single tile (double-click or the tile's fullscreen button). It also calls `setViewing` with that tile as `focus`.
 
 ### Room, narrow (< 768)
 
@@ -337,7 +341,7 @@ All components come from shadcn/ui on Base UI (`npx shadcn@latest init -b base`)
 | Leave | Core: `leave()` |
 | Per-tile mute and volume, deafen all | UI only (the `<video>` elements) |
 | Camera mirror | UI only (a CSS transform on your own camera tile) |
-| Diagnostics on/off, theater on/off, dock visibility, chosen profile | UI only, persisted in `localStorage` |
+| Diagnostics on/off, theater on/off, dock visibility, chosen profile, own share shown, panel sizes | UI only, persisted in `localStorage` |
 | Tally timer | UI only, started when `screen.status` becomes `live` |
 
 The capture audio options are frozen (`systemAudio: "exclude"`, `windowAudio: "window"`, no audio from `monitor`). No control in this design changes them, and none may be added. The UI only reports `screen.hasAudio`.
@@ -550,8 +554,8 @@ The group's voice: casual, short, "pra", "tá", "você". Sentence case. No excla
 | Deafen, on | Desmutar tudo |
 | Settings button | Ajustes |
 | Diagnostics switch | Mostrar diagnóstico nas telas |
-| Theater on | Modo teatro (T) |
-| Theater off | Sair do modo teatro (Esc) |
+| Reset panel sizes | Restaurar tamanhos |
+| Layout switch | Grade / Destaque |
 
 ### Stage and tiles
 
@@ -567,8 +571,11 @@ The group's voice: casual, short, "pra", "tá", "você". Sentence case. No excla
 | Volume | Volume |
 | Fullscreen | Tela cheia (duplo clique) |
 | Exit fullscreen | Sair da tela cheia (Esc) |
-| Theater | Modo teatro (T) |
+| Theater | Destaque (T) |
 | Stop on your tile | Parar de mostrar |
+| Your share, hidden | Você está ao vivo |
+| Show your share | Ver minha tela |
+| Hide your share | Esconder minha tela |
 
 ### Diagnostics
 
