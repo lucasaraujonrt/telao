@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Camera, Check, Link2, LogOut, Moon, MoreHorizontal, Pencil } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -64,11 +64,13 @@ function Row({ person }: { person: Person }) {
   )
 }
 
-export function Sidebar({ people, me, onCopy, onAway, onRename, onLeave }: {
+export function Sidebar({ people, me, onCopy, action, onAway, onRename, onLeave }: {
   people: readonly Person[]
   me: Person
   /** Absent in the narrow sheet, where the stage's top row has the copy button. */
   onCopy?: () => Promise<boolean>
+  /** Replaces the copy button at the end of the header row (the sheet's close button). */
+  action?: ReactNode
   onAway: (away: boolean) => void
   onRename: () => void
   onLeave: () => void
@@ -81,7 +83,7 @@ export function Sidebar({ people, me, onCopy, onAway, onRename, onLeave }: {
     <nav aria-label="Pessoas na sala" className="flex h-full w-full flex-col bg-page">
       <div className="flex h-14 flex-none items-center justify-between pr-2 pl-5">
         <span className="t-heading">Telão</span>
-        {onCopy && <CopyLinkButton onCopy={onCopy} />}
+        {action ?? (onCopy && <CopyLinkButton onCopy={onCopy} />)}
       </div>
       <div className="flex items-baseline gap-2 px-5 pt-3 pb-2 t-small">
         <span className="font-[550] text-text">Na sala</span>

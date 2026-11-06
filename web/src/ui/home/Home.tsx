@@ -42,7 +42,7 @@ export function Home({ link, onSubmit }: { link: RoomLink; onSubmit: (name: stri
       <main className="relative z-10 flex min-h-svh flex-col justify-center px-6 py-16 md:px-16 max-md:min-h-0 max-md:pt-20 max-md:pb-10">
         <div className="w-full max-w-[520px]">
           <h1 className="t-display">Telão</h1>
-          <p className="mt-4 max-w-[46ch] t-lede text-text-2">{LEDE[link.kind]}</p>
+          <p className="mt-4 max-w-[46ch] t-lede text-balance text-text-2">{LEDE[link.kind]}</p>
           <form onSubmit={submit} noValidate className="mt-10 flex gap-2 max-md:flex-col">
             <div className="min-w-0 flex-1">
               <label htmlFor="nick" className="sr-only">Seu nome</label>

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Users } from 'lucide-react'
+import { Users, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { Sheet, SheetClose, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Toaster } from '@/components/ui/sonner'
 import { diagnosticRows, type DiagnosticRow } from '@/lib/format'
 import { prefs } from '@/lib/storage'
@@ -188,6 +188,9 @@ export function RoomView({ room, snapshot }: { room: Room | null; snapshot: Room
       people={people}
       me={me}
       onCopy={inSheet ? undefined : copyLink}
+      action={inSheet ? (
+        <SheetClose render={<Button variant="icon" size="icon" aria-label="Fechar" />}><X /></SheetClose>
+      ) : undefined}
       onAway={away => { room?.setAway(away); prefs.away.set(away) }}
       onRename={() => { setSheet(false); setRenaming(true) }}
       onLeave={() => room?.leave()}
@@ -223,14 +226,15 @@ export function RoomView({ room, snapshot }: { room: Room | null; snapshot: Room
 
   return (
     <div
-      className="flex h-svh gap-2 overflow-hidden bg-page p-2 text-text"
+      className="flex h-svh overflow-hidden bg-page p-2 text-text"
       onPointerMove={wake}
       onFocusCapture={wake}
       onPointerOver={event => { hovered.current = (event.target as HTMLElement).closest('[data-tile-key]')?.getAttribute('data-tile-key') ?? null }}
     >
       {!narrow && (
-        <aside className={cn('flex-none overflow-hidden transition-[width] duration-240 ease-(--ease-in-out)', activeTheater ? 'w-0' : 'w-[248px]')} inert={activeTheater !== null}>
-          <div className="h-full w-[248px]">{sidebar(false)}</div>
+        // The 8 px gap to the stage lives inside the aside, so it collapses with it in theater.
+        <aside className={cn('flex-none overflow-hidden transition-[width] duration-240 ease-(--ease-in-out)', activeTheater ? 'w-0' : 'w-[256px]')} inert={activeTheater !== null}>
+          <div className="h-full w-[256px] pr-2">{sidebar(false)}</div>
         </aside>
       )}
       <Stage
@@ -254,10 +258,10 @@ export function RoomView({ room, snapshot }: { room: Room | null; snapshot: Room
           </div>
         ) : undefined}
       />
-      {/* Phase 3: the 320 px side panel (memes, modos, pegadinhas, joguinho) mounts here. */}
+      {/* Phase 3: the 320 px side panel (memes, modos, pegadinhas, joguinho) mounts here, with its own ml-2. */}
       {narrow && (
         <Sheet open={sheet} onOpenChange={setSheet}>
-          <SheetContent side="left" className="w-[280px] gap-0 p-0 pt-2">
+          <SheetContent side="left" className="w-[280px] gap-0 p-0" showCloseButton={false}>
             <SheetTitle className="sr-only">Pessoas na sala</SheetTitle>
             {sidebar(true)}
           </SheetContent>

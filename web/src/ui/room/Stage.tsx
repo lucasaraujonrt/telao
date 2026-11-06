@@ -47,10 +47,11 @@ export function Stage({ connecting, screens, cameras, theater, narrow, dockHidde
     const others = all.filter(item => item.key !== focused.key)
     body = (
       <>
-        {/* The strip of other tiles sits between the focused tile and the dock, never over the picture. */}
-        <div className={cn('fit-cell absolute inset-x-2 top-2', others.length ? 'bottom-[180px]' : 'bottom-2')}>{tile(focused, { className: 'fit-tile' })}</div>
+        {/* The focused tile takes the whole stage. The strip of other tiles floats over its foot, above
+            the dock, and fades out with it. */}
+        <div className="fit-cell absolute inset-2">{tile(focused, { className: 'fit-tile' })}</div>
         {others.length > 0 && (
-          <div className={cn('dock absolute inset-x-2 bottom-[76px] flex h-24 justify-center gap-2', dockHidden && 'pointer-events-none')} data-hidden={dockHidden || undefined}>
+          <div className={cn('dock absolute inset-x-2 bottom-[84px] flex h-24 justify-center gap-2', dockHidden && 'pointer-events-none')} data-hidden={dockHidden || undefined}>
             {others.map(item => (
               <button key={item.key} type="button" className="aspect-video h-full rounded-[12px]" aria-label="Focar esta tela" onClick={() => onFocus(item.key)}>
                 {tile(item, { thumbnail: true, className: 'size-full' })}
@@ -80,7 +81,7 @@ export function Stage({ connecting, screens, cameras, theater, narrow, dockHidde
   } else {
     const grid = screens.length ? screens : cameras
     body = (
-      <div className="flex h-full flex-col gap-2 p-2 pb-[76px]">
+      <div className="flex h-full flex-col gap-2 p-2 pb-[84px]">
         <Grid count={grid.length}>{grid.map(item => (
           <div key={item.key} className="fit-cell">{tile(item, { className: 'fit-tile', lights: item.key === seen.lights })}</div>
         ))}</Grid>

@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { Camera, CameraOff, Check, ChevronDown, Minimize2, Monitor, Settings, Volume2, VolumeX } from 'lucide-react'
+import { Camera, Check, ChevronDown, Minimize2, Monitor, Settings, Volume2, VolumeX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from '@/components/ui/popover'
 import { Switch } from '@/components/ui/switch'
@@ -44,10 +44,12 @@ export interface DockProps {
 
 const Divider = () => <span aria-hidden="true" className="mx-1 h-6 w-px bg-border-strong" />
 
-/** Two halves of one pill: the action and the chevron that opens its options. */
+/** Two halves of one pill: the action and the chevron that opens its options. A filled pill paints
+ * the whole pill, so its halves stay transparent and only show their own hover. */
 function Split({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn('relative flex h-10 items-center rounded-full', className)}>{children}</div>
+  return <div className={cn('relative flex h-10 items-center rounded-full transition-colors duration-160', className)}>{children}</div>
 }
+const FILLED_HALF = 'bg-transparent hover:bg-border-strong aria-pressed:bg-transparent aria-expanded:bg-transparent'
 const Chevron = () => (
   <>
     <span aria-hidden="true" className="absolute top-[10px] bottom-[10px] w-px bg-border-strong" style={{ left: 'calc(100% - 24px)' }} />
@@ -133,7 +135,7 @@ function ShareControl(props: DockProps & { popover: PopoverState }) {
 
   const chevron = (
     <PopoverTrigger
-      render={<Button variant="icon" className="h-10 w-6 rounded-l-none rounded-r-full px-0" aria-label="Qualidade" disabled={disabled || blocked} />}
+      render={<Button variant="icon" className={cn('h-10 w-6 rounded-l-none rounded-r-full px-0', (live || starting) && FILLED_HALF)} aria-label="Qualidade" disabled={disabled || blocked} />}
     >
       <Chevron />
     </PopoverTrigger>
@@ -153,12 +155,12 @@ function ShareControl(props: DockProps & { popover: PopoverState }) {
           </PopoverTrigger>
         )}
       >
-        <Button variant="ghost" className="h-10 gap-2 rounded-l-full rounded-r-none pr-2 pl-3.5" />
+        <Button variant="ghost" className={cn('h-10 gap-2 rounded-l-full rounded-r-none pr-2 pl-3.5', FILLED_HALF)} />
       </Tip>
     )
   } else if (starting) {
     main = (
-      <Button variant="ghost" className="h-10 gap-2 rounded-l-full rounded-r-none pr-2 pl-3.5 text-text-2" disabled>
+      <Button variant="ghost" className={cn('h-10 gap-2 rounded-l-full rounded-r-none pr-2 pl-3.5 text-text-2', FILLED_HALF)} disabled>
         <span className="tally-dot" data-pending="" />Escolhendo tela…
       </Button>
     )
@@ -174,7 +176,8 @@ function ShareControl(props: DockProps & { popover: PopoverState }) {
 
   return (
     <Popover {...popover}>
-      <Split className="overflow-hidden transition-[width] duration-240 ease-(--ease-out)">
+      {/* The tally is an object in the dock: one filled pill across both halves. */}
+      <Split className={cn('overflow-hidden', (live || starting) && 'bg-surface-2')}>
         <div style={{ width: width ?? undefined }} className="h-10 overflow-hidden transition-[width] duration-240 ease-(--ease-out)">
           <div ref={content} className="inline-flex h-10 w-max">
             {tip ? <Tip label={tip}>{main as React.ReactElement}</Tip> : main}
@@ -207,9 +210,9 @@ function ShareControl(props: DockProps & { popover: PopoverState }) {
           ))}
         </ToggleGroup>
         {live ? (
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="secondary" onClick={() => { popover.onOpenChange(false); props.onStop() }}>Parar de mostrar</Button>
+          <div className="grid gap-2">
             <Button onClick={() => { popover.onOpenChange(false); props.onSwitch() }}>Trocar tela</Button>
+            <Button variant="secondary" onClick={() => { popover.onOpenChange(false); props.onStop() }}>Parar de mostrar</Button>
           </div>
         ) : (
           <Button disabled={blocked || starting} onClick={() => { popover.onOpenChange(false); props.onShare() }}>Mostrar minha tela</Button>
@@ -235,13 +238,14 @@ function CameraControl(props: DockProps & { popover: PopoverState }) {
   const label = on ? 'Desligar câmera' : 'Ligar câmera'
   return (
     <Popover {...popover}>
-      <Split>
+      {/* Pressed paints the whole pill; aria-pressed on the icon half carries the state. */}
+      <Split className={cn(on && 'bg-accent-soft text-accent-blue')}>
         <Tip label={label}>
-          <Button variant="icon" size="icon" className="rounded-l-full rounded-r-none" aria-label={label} aria-pressed={on} disabled={disabled || starting} onClick={() => props.onCamera(!on)}>
-            {starting ? <span className="spinner" /> : on ? <Camera /> : <CameraOff />}
+          <Button variant="icon" size="icon" className={cn('rounded-l-full rounded-r-none', on && FILLED_HALF)} aria-label={label} aria-pressed={on} disabled={disabled || starting} onClick={() => props.onCamera(!on)}>
+            {starting ? <span className="spinner" /> : <Camera />}
           </Button>
         </Tip>
-        <PopoverTrigger render={<Button variant="icon" className="h-10 w-6 rounded-l-none rounded-r-full px-0" aria-label="Câmera" disabled={disabled} />}>
+        <PopoverTrigger render={<Button variant="icon" className={cn('h-10 w-6 rounded-l-none rounded-r-full px-0', on && cn(FILLED_HALF, 'text-accent-blue hover:text-accent-blue'))} aria-label="Câmera" disabled={disabled} />}>
           <Chevron />
         </PopoverTrigger>
       </Split>

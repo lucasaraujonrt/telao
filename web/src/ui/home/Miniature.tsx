@@ -16,11 +16,9 @@ function Person({ w, live }: { w: number; live?: boolean }) {
 
 function ScreenFrame({ live }: { live?: boolean }) {
   return (
-    <div className="relative aspect-video overflow-hidden rounded-[12px] bg-surface">
-      <div className="absolute inset-x-4 top-4 grid gap-2">
-        <Bar w={96} />
-        <Bar w={64} />
-      </div>
+    <div className="relative aspect-video overflow-hidden rounded-[12px] bg-surface-2">
+      {/* A quiet two-tone frame stands in for the picture: no fake video, no fake text. */}
+      <div className="absolute inset-x-0 bottom-0 h-2/5 bg-fill" />
       <div className="absolute bottom-3 left-3 flex h-6 items-center gap-1.5 rounded-full bg-(--chip-on-video) px-2.5">
         {live && <span className="tally-dot" />}
         <Bar w={40} tone="text-2" />
@@ -34,10 +32,10 @@ export function Miniature() {
   return (
     <div aria-hidden="true" className="dark pointer-events-none select-none">
       <div
-        className="flex w-[700px] origin-top-left scale-[1.3] rounded-tl-[20px] border-t border-l border-hairline bg-page text-text shadow-3 max-md:scale-100"
+        className="flex w-[920px] origin-top-left max-md:w-[400px] scale-[1.3] rounded-tl-[20px] border-t border-l border-border-strong bg-page text-text shadow-3 max-md:scale-100"
         style={{ height: 'var(--mini-h, 560px)' }}
       >
-        <aside className="flex w-[200px] flex-none flex-col gap-3 p-2">
+        <aside className="flex w-[200px] flex-none flex-col gap-3 p-2 max-md:hidden">
           <div className="flex h-10 items-center px-3 t-heading">Telão</div>
           <div className="px-3"><Bar w={52} /></div>
           <div className="grid gap-0.5">
@@ -46,9 +44,9 @@ export function Miniature() {
             <Person w={88} />
           </div>
         </aside>
-        <div className="flex-1 py-2 pr-2">
+        <div className="flex-1 py-2 pr-2 max-md:pl-2">
           <div className="relative flex h-full flex-col rounded-[20px] bg-stage p-2 pb-[76px]">
-            <div className="grid flex-1 grid-cols-2 content-center gap-2 max-md:content-start">
+            <div className="grid flex-1 grid-cols-2 content-start gap-2">
               <ScreenFrame live />
               <ScreenFrame />
             </div>

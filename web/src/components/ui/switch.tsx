@@ -13,7 +13,7 @@ function Switch({
       data-slot="switch"
       data-size={size}
       className={cn(
-        "peer group/switch relative inline-flex h-[26px] w-[44px] shrink-0 items-center rounded-full p-[3px] transition-colors duration-160 outline-none data-checked:bg-accent-blue data-unchecked:bg-fill data-disabled:opacity-40",
+        "peer group/switch relative inline-flex h-[26px] w-[44px] shrink-0 items-center rounded-full p-[3px] transition-colors duration-160 data-checked:bg-accent-blue data-unchecked:bg-fill data-disabled:opacity-40",
         className
       )}
       {...props}

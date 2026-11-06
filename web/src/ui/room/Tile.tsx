@@ -102,7 +102,7 @@ export function Tile(props: TileProps) {
 
       <div className={cn('absolute flex items-center gap-1.5 rounded-full bg-(--chip-on-video) text-white backdrop-blur-md t-micro', thumbnail ? 'bottom-1.5 left-1.5 h-5 px-2' : 'bottom-3 left-3 h-6 px-2.5')}>
         {screen && <span className="tally-dot" data-light={props.lights || undefined} />}
-        <span className="max-w-[18ch] truncate">{label}</span>
+        <span className={cn('truncate', thumbnail || !screen ? 'max-w-[10ch]' : 'max-w-[18ch]')}>{label}</span>
         {away && <Moon className="size-3 text-text-2" strokeWidth={1.75} aria-label="Ausente" />}
       </div>
 
