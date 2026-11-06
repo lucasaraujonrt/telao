@@ -1,4 +1,4 @@
-import { cleanLabel } from '../../room/protocol'
+import { cleanLabel, LABEL_LENGTH } from '../../room/protocol'
 
 export type MemeKey = string
 export type Meme = readonly [key: MemeKey, label: string]
@@ -38,4 +38,4 @@ export function keyFromLink(link: string): MemeKey | null {
 }
 
 export const builtInLabel = (key: MemeKey) => BUILT_IN.get(key)
-export { cleanLabel }
+export { cleanLabel, LABEL_LENGTH }

@@ -9,8 +9,15 @@ import { prefs } from '@/lib/storage'
 import { cn } from '@/lib/utils'
 import type { VideoStats } from '../../media/streaming'
 import type { Room, RoomSnapshot, Tile as TileData, TileKey } from '../../room/room'
+import { useHotkeys } from '../../features/hooks'
+import { MemesPanel } from '../../features/memes/MemesPanel'
+import { useMemes } from '../../features/memes/useMemes'
+import { useReactions } from '../../features/reactions/useReactions'
+import { useThrowables } from '../../features/throwables/useThrowables'
+import { Toolbar, ToolbarRow } from '../../features/Toolbar'
+import { useSounds } from '../../features/useSounds'
 import { AUTOPLAY_BLOCKED, NOTICES } from '../copy'
-import { useColorScheme, useNarrow } from '../hooks'
+import { useColorScheme, useMediaQuery, useNarrow } from '../hooks'
 import { Dock } from './Dock'
 import { RenameDialog } from './RenameDialog'
 import { SelfPreview } from './SelfPreview'
@@ -42,6 +49,9 @@ function useStats(room: Room | null, on: boolean) {
 export function RoomView({ room, snapshot }: { room: Room | null; snapshot: RoomSnapshot }) {
   useColorScheme('dark')
   const narrow = useNarrow()
+  // The dock fits the toolbar group on a wide window; otherwise the group gets its own row.
+  const wide = useMediaQuery('(min-width: 1200px)'), wider = useMediaQuery('(min-width: 1600px)')
+  const [panel, setPanel] = useState(false)
   const [theater, setTheater] = useState<TileKey | null>(null)
   const [fullscreen, setFullscreen] = useState<TileKey | null>(null)
   const [deaf, setDeaf] = useState(false)
@@ -84,6 +94,22 @@ export function RoomView({ room, snapshot }: { room: Room | null; snapshot: Room
     live: tiles.has(member.id), camera: tiles.has(member.id + ':camera'),
   }))]
   const memberOf = (id: string) => members.find(member => member.id === id)
+  const nameOf = (id: string) => memberOf(id)?.name ?? 'Alguém'
+
+  // Phase 3: memes, throwables and reactions. Away drops all three for you only.
+  const away = snapshot.away
+  const hotkeys = !!room && !connecting && !renaming
+  const { sounds, state: soundState } = useSounds(deaf, away)
+  const memes = useMemes({ room, sounds, away, nameOf, enabled: hotkeys })
+  const throwables = useThrowables({ room, sounds, away, nameOf, hasTiles: focusable.length > 0, enabled: hotkeys })
+  // A reaction goes to the tile under the pointer, else the focused one, else the first screen.
+  const pickTarget = () => {
+    if (hovered.current && canFocus(hovered.current)) return hovered.current
+    return activeTheater ?? focusable.find(tile => tile.owner !== 'me')?.key ?? focusable[0]?.key ?? null
+  }
+  const reactions = useReactions({ room, away, pickTarget, enabled: hotkeys })
+  useHotkeys(key => { if (key !== 'b') return; setPanel(open => !open); return true }, { enabled: hotkeys })
+  const toolbarInDock = !narrow && (panel ? wider : wide)
 
   useEffect(() => { document.title = `${live ? '● ' : ''}Telão (${people.length})` }, [live, people.length])
   // The tally timer starts when the share goes live and survives any remount of the dock.
@@ -124,7 +150,7 @@ export function RoomView({ room, snapshot }: { room: Room | null; snapshot: Room
   useEffect(() => {
     const canFocusNow = (key: TileKey | null) => !!key && focusKeys.split(' ').includes(key)
     const onKey = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || editable(event.target) || renaming) return
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || event.repeat || editable(event.target) || renaming) return
       if (event.key === 't' || event.key === 'T') {
         if (narrow) return
         setTheater(current => canFocusNow(current) ? null : canFocusNow(hovered.current) ? hovered.current : firstTile)
@@ -226,6 +252,18 @@ export function RoomView({ room, snapshot }: { room: Room | null; snapshot: Room
     />
   )
 
+  const toolbar = away ? undefined : (
+    <Toolbar
+      reactions={reactions.reactions}
+      onReact={reactions.react}
+      items={throwables.items}
+      armed={throwables.armed}
+      onArm={throwables.arm}
+      panel={panel}
+      onPanel={setPanel}
+      disabled={connecting || !room}
+    />
+  )
   const dock = (
     <Dock
       disabled={connecting || !room}
@@ -252,7 +290,11 @@ export function RoomView({ room, snapshot }: { room: Room | null; snapshot: Room
       onLayout={next => setTheater(next === 'focus' ? firstTile : null)}
       onResetLayout={() => { prefs.layouts.clear(); setLayoutEpoch(epoch => epoch + 1) }}
       onBusy={setDockBusy}
+      toolbar={toolbarInDock ? toolbar : undefined}
     />
+  )
+  const memesPanel = (onClose: () => void) => (
+    <MemesPanel memes={memes} sounds={sounds} soundState={soundState} away={away} onClose={onClose} />
   )
 
   return (
@@ -261,6 +303,8 @@ export function RoomView({ room, snapshot }: { room: Room | null; snapshot: Room
       onPointerMove={wake}
       onFocusCapture={wake}
       onPointerOver={event => { hovered.current = (event.target as HTMLElement).closest('[data-tile-key]')?.getAttribute('data-tile-key') ?? null }}
+      data-armed={throwables.armed ?? undefined}
+      {...throwables.handlers}
     >
       {!narrow && (
         // The 8 px gap to the stage lives inside the aside, so it collapses with it in theater.
@@ -278,7 +322,7 @@ export function RoomView({ room, snapshot }: { room: Room | null; snapshot: Room
         layoutEpoch={layoutEpoch}
         narrow={narrow}
         dockHidden={dockHidden}
-        dock={dock}
+        dock={toolbar && !toolbarInDock ? <div className="flex flex-col items-center"><ToolbarRow hidden={dockHidden}>{toolbar}</ToolbarRow>{dock}</div> : dock}
         renderTile={renderTile}
         onShare={share}
         onFocus={setTheater}
@@ -292,7 +336,20 @@ export function RoomView({ room, snapshot }: { room: Room | null; snapshot: Room
           </div>
         ) : undefined}
       />
-      {/* Phase 3: the 320 px side panel (memes, modos, pegadinhas, joguinho) mounts here, with its own ml-2. */}
+      {!narrow && (
+        // The side panel: 320 px plus the 8 px gap to the stage, which collapses with it.
+        <aside className={cn('flex-none overflow-hidden transition-[width] duration-240 ease-(--ease-in-out)', panel ? 'w-[328px]' : 'w-0')} inert={!panel}>
+          <div className="h-full w-[328px] pl-2">{memesPanel(() => setPanel(false))}</div>
+        </aside>
+      )}
+      {narrow && (
+        <Sheet open={panel} onOpenChange={setPanel}>
+          <SheetContent side="right" className="w-[320px] gap-0 p-0" showCloseButton={false}>
+            <SheetTitle className="sr-only">Memes</SheetTitle>
+            {memesPanel(() => setPanel(false))}
+          </SheetContent>
+        </Sheet>
+      )}
       {narrow && (
         <Sheet open={sheet} onOpenChange={setSheet}>
           <SheetContent side="left" className="w-[280px] gap-0 p-0" showCloseButton={false}>

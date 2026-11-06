@@ -12,6 +12,9 @@ const layoutKeys = () => { try { return Object.keys(localStorage).filter(key => 
 
 const PROFILES: readonly ScreenProfileName[] = ['game', 'detail', 'light']
 
+/** Raw access for feature modules that keep their own keys, such as the memes board. */
+export const store = { get: read, set: write }
+
 export const prefs = {
   nick: { get: () => read('telao-nick') ?? '', set: (name: string) => write('telao-nick', name) },
   away: flag('telao-away'),
@@ -22,6 +25,11 @@ export const prefs = {
     getItem: (key: string) => read(layoutKey(key)),
     setItem: (key: string, value: string) => write(layoutKey(key), value),
     clear: () => layoutKeys().forEach(remove),
+  },
+  /** The meme volume, 0 to 1, saved as a percent like the old app. */
+  memeVolume: {
+    get: () => { const value = Number(read('telao-memevol') ?? 40); return Number.isFinite(value) ? Math.min(100, Math.max(0, value)) / 100 : 0.4 },
+    set: (level: number) => write('telao-memevol', String(Math.round(level * 100))),
   },
   mirror: { get: () => read('telao-mirror') !== '0', set: (on: boolean) => write('telao-mirror', on ? '1' : '0') },
   profile: {

@@ -55,8 +55,8 @@ Sections of `public/index.html`:
 - [ ] Camera with effects and mirroring
 - [ ] Audio: per-tile mute and volume, deafen all
 - [ ] Members list, rename, "ao vivo" badge, notifications
-- [ ] Memes (myinstants) and combo edit
-- [ ] Throwables and reactions
+- [x] Memes (myinstants). Combos were dropped
+- [x] Throwables and reactions
 - [ ] Pranks on whoever is live
 - [ ] Modes: pod, 4:20, tiger receipt, aura
 - [ ] Theater and fullscreen, viewer preferences

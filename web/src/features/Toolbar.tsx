@@ -62,7 +62,7 @@ export function Toolbar(props: ToolbarProps) {
 export function ToolbarRow({ hidden, children }: { hidden: boolean; children: React.ReactNode }) {
   return (
     <div
-      className="dock mb-2 flex h-[52px] w-max max-w-full items-center overflow-x-auto rounded-full border border-hairline bg-surface/88 p-1.5 shadow-2 backdrop-blur-[20px]"
+      className="dock mb-2 flex h-[52px] w-max max-w-full items-center rounded-full border border-hairline bg-surface/88 p-1.5 shadow-2 backdrop-blur-[20px]"
       data-hidden={hidden || undefined}
     >
       {children}
