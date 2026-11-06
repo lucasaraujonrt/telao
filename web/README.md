@@ -1,32 +1,23 @@
-# React + TypeScript + Vite
+# Telão web
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The React rewrite of Telão (see `../docs/rewrite-plan.md` and `../docs/design.md`). Production still serves `../public/`.
 
-Currently, two official plugins are available:
+## Run
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```sh
+npm install
+npm run dev        # http://localhost:5173
+npm run build      # typecheck and bundle into dist/
+npm test           # Vitest
+npx oxlint src
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+`/api/ice` is a Vercel function, so under `vite dev` the ICE fetch fails and the room falls back to STUN. Rooms still connect on most networks.
+
+## Code map
+
+- `src/room/`, `src/media/`: the framework-free core (`createRoom`, capture, streaming, camera effects).
+- `src/router.tsx`: `/` and `/sala/$code`. Old `/#code` and `/#v1.<code>.…` links redirect to the room route.
+- `src/ui/room/useRoom.ts`: the one React integration with the core, through `useSyncExternalStore`.
+- `src/ui/home/`, `src/ui/room/`: the screens. `src/components/ui/` holds the shadcn primitives on Base UI, restyled through the tokens in `src/index.css`.
+- `src/lib/`: formatting helpers and the `localStorage` preferences (same keys as the old app).

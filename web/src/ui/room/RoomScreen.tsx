@@ -19,13 +19,13 @@ function JoinedRoom({ code, name }: { code: RoomCode; name: string }) {
   const navigate = useNavigate()
   const [attempt, setAttempt] = useState(0)
   // A retry keeps a name changed in the room.
-  const current = attempt === 0 ? name : prefs.nick.get() || name
+  const [current, setCurrent] = useState(name)
   const { room, snapshot } = useRoom(code, current, prefs.away.get(), attempt)
   if (snapshot.status.kind === 'closed') {
     return (
       <EndScreen
         reason={snapshot.status.reason}
-        onAgain={() => setAttempt(value => value + 1)}
+        onAgain={() => { setCurrent(snapshot.name); setAttempt(value => value + 1) }}
         onNewRoom={() => {
           const next = newRoomCode()
           joinNext(next, snapshot.name)
