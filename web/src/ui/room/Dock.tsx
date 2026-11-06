@@ -75,7 +75,8 @@ export function Dock(props: DockProps) {
       aria-label="Controles da sala"
       className="dock flex h-[52px] items-center gap-1 rounded-full border border-hairline bg-surface/88 p-1.5 shadow-2 backdrop-blur-[20px]"
       data-hidden={hidden && !busy ? '' : undefined}
-      onFocus={() => setFocusInside(true)}
+      // Keyboard focus keeps the dock up; the focus a mouse click leaves on a button does not.
+      onFocus={event => setFocusInside((event.target as HTMLElement).matches(':focus-visible'))}
       onBlur={event => { if (!root.current?.contains(event.relatedTarget as Node | null)) setFocusInside(false) }}
     >
       <ShareControl {...props} popover={open('share')} />

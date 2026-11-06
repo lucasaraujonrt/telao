@@ -47,9 +47,13 @@ function Row({ person }: { person: Person }) {
       ) : (
         <Avatar><AvatarFallback>{person.name!.slice(0, 1)}</AvatarFallback></Avatar>
       )}
-      <span key={person.name ?? ''} className={cn('min-w-0 truncate animate-in fade-in-0 duration-200', connecting ? 'text-text-3' : person.away ? 'text-text-2' : 'text-text')}>
-        {connecting ? 'conectando…' : person.name}
-        {person.you && <span className="text-text-2"> (você)</span>}
+      {/* "conectando…" cross-fades into the name in the same place, never a jump. */}
+      <span className="grid min-w-0">
+        <span aria-hidden={!connecting} className={cn('col-start-1 row-start-1 truncate text-text-3 transition-opacity duration-200', !connecting && 'opacity-0')}>conectando…</span>
+        <span aria-hidden={connecting} className={cn('col-start-1 row-start-1 truncate transition-opacity duration-200', connecting && 'opacity-0', person.away ? 'text-text-2' : 'text-text')}>
+          {person.name}
+          {person.you && <span className="text-text-2"> (você)</span>}
+        </span>
       </span>
       <span className="ml-auto flex items-center gap-2 text-text-2">
         {person.live && <Tip label="ao vivo"><span className="tally-dot" role="img" aria-label="ao vivo" /></Tip>}

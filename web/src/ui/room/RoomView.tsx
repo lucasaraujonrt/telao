@@ -130,7 +130,10 @@ export function RoomView({ room, snapshot }: { room: Room | null; snapshot: Room
     clearTimeout(idleTimer.current)
     idleTimer.current = setTimeout(() => setIdle(true), IDLE_MS)
   }
-  useEffect(() => () => clearTimeout(idleTimer.current), [])
+  useEffect(() => {
+    idleTimer.current = setTimeout(() => setIdle(true), IDLE_MS)
+    return () => clearTimeout(idleTimer.current)
+  }, [])
 
   const audioOf = (key: TileKey) => audio.get(key) ?? DEFAULT_AUDIO
   const setTileAudio = (key: TileKey, next: TileAudio) => {

@@ -35,7 +35,10 @@ export interface TileProps {
 export function Tile(props: TileProps) {
   const { tile, label, away, audio, deaf, mirror, diagnostics, thumbnail, fullscreen, theater, canTheater } = props
   const video = useRef<HTMLVideoElement>(null)
-  const [playing, setPlaying] = useState(false)
+  // A remount (theater on or off) gets a fresh <video>; a stream already delivering frames should
+  // not flash the connecting placeholder.
+  const flowing = (stream: MediaStream) => { const track = stream.getVideoTracks()[0]; return !!track && track.readyState === 'live' && !track.muted }
+  const [playing, setPlaying] = useState(() => flowing(tile.stream))
   const mine = tile.owner === 'me'
   const screen = tile.kind === 'screen'
   const muted = deaf || audio.muted
@@ -48,7 +51,6 @@ export function Tile(props: TileProps) {
     const element = video.current
     if (!element) return
     element.srcObject = tile.stream
-    setPlaying(false)
     return () => { element.srcObject = null }
   }, [tile.stream])
 
