@@ -1,111 +1,264 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter/opsz.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Design tokens: docs/design.md. The light set is the home; .dark is the room (and the home in dark mode). */
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  --page: #f4f4f6;
+  --surface: #ffffff;
+  --surface-2: #f9f9fa;
+  --fill: #ececef;
+  --text: #1c1c1e;
+  --text-2: #6c6c72;
+  --text-3: #a3a3a9;
+  --hairline: rgba(0, 0, 0, 0.07);
+  --border-strong: rgba(0, 0, 0, 0.12);
+  --accent-blue: #1d6fea;
+  --accent-hover: #155fd3;
+  --accent-soft: #e6f0fe;
+  --live: #e5342b;
+  --danger: #d92d20;
+  --stage: #000000;
+  --thumb: var(--surface);
+  --scrim: linear-gradient(to top, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0));
+  --chip-on-video: rgba(20, 20, 22, 0.62);
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  --shadow-1: 0 1px 1px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-2: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.06), 0 12px 24px -8px rgba(0, 0, 0, 0.06);
+  --shadow-3: 0 2px 4px rgba(0, 0, 0, 0.05), 0 12px 32px rgba(0, 0, 0, 0.1), 0 32px 64px -16px rgba(0, 0, 0, 0.14);
+  --shadow-accent: 0 1px 2px rgba(29, 111, 234, 0.25), 0 6px 16px -4px rgba(29, 111, 234, 0.35);
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-16: 64px;
+  --r-pill: 999px; --r-xl: 20px; --r-lg: 16px; --r-tile: 12px; --r-md: 12px; --r-sm: 8px;
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* shadcn names, mapped onto the tokens so the primitives pick them up. */
+  --background: var(--page);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary: var(--accent-blue);
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-2);
+  --accent: var(--surface-2);
+  --accent-foreground: var(--text);
+  --destructive: var(--danger);
+  --border: var(--hairline);
+  --input: var(--hairline);
+  --ring: var(--accent-blue);
+  --radius: 12px;
+}
+
+.dark {
+  --page: #0e0e10;
+  --surface: #1a1a1d;
+  --surface-2: #242428;
+  --fill: #2e2e33;
+  --text: #f2f2f4;
+  --text-2: #a0a0a8;
+  --text-3: #66666e;
+  --hairline: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --accent-blue: #2b78f0;
+  --accent-hover: #1d6fea;
+  --accent-soft: rgba(43, 120, 240, 0.18);
+  --live: #ff453a;
+  --danger: #ff6961;
+  --thumb: var(--surface-2);
+
+  /* Shadows read weaker on dark: alpha times 2.2. */
+  --shadow-1: 0 1px 1px rgba(0, 0, 0, 0.088), 0 1px 3px rgba(0, 0, 0, 0.11);
+  --shadow-2: 0 1px 2px rgba(0, 0, 0, 0.088), 0 4px 12px rgba(0, 0, 0, 0.132), 0 12px 24px -8px rgba(0, 0, 0, 0.132);
+  --shadow-3: 0 2px 4px rgba(0, 0, 0, 0.11), 0 12px 32px rgba(0, 0, 0, 0.22), 0 32px 64px -16px rgba(0, 0, 0, 0.31);
+  --shadow-accent: 0 1px 2px rgba(43, 120, 240, 0.4), 0 6px 16px -4px rgba(43, 120, 240, 0.5);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-heading: var(--font-sans);
+  --color-page: var(--page);
+  --color-stage: var(--stage);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-fill: var(--fill);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-hairline: var(--hairline);
+  --color-border-strong: var(--border-strong);
+  --color-accent-blue: var(--accent-blue);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-live: var(--live);
+  --color-danger: var(--danger);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --shadow-1: var(--shadow-1);
+  --shadow-2: var(--shadow-2);
+  --shadow-3: var(--shadow-3);
+  --shadow-accent: var(--shadow-accent);
+  --ease-out: var(--ease-out);
+  --ease-in-out: var(--ease-in-out);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    font-family: var(--font-sans);
+    font-optical-sizing: auto;
+    font-feature-settings: "cv11", "ss03";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    background: var(--page);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 450;
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+  }
+  button, [role="button"] {
+    cursor: default;
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+/* Type scale. */
+@utility t-display { font-size: 56px; line-height: 60px; font-weight: 650; letter-spacing: -0.03em; }
+@utility t-title { font-size: 22px; line-height: 28px; font-weight: 600; letter-spacing: -0.015em; }
+@utility t-heading { font-size: 15px; line-height: 20px; font-weight: 600; letter-spacing: -0.005em; }
+@utility t-body { font-size: 14px; line-height: 20px; font-weight: 450; }
+@utility t-lede { font-size: 16px; line-height: 24px; font-weight: 450; letter-spacing: -0.005em; }
+@utility t-small { font-size: 13px; line-height: 18px; font-weight: 450; }
+@utility t-micro { font-size: 12px; line-height: 16px; font-weight: 550; letter-spacing: 0.005em; }
+@utility tnum { font-variant-numeric: tabular-nums; }
+
+/* Over video, the focus ring gets a dark halo so it reads on bright frames. */
+.on-video :focus-visible {
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+/* The one red: always a 6 px circle. */
+.tally-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--live);
+}
+.tally-dot[data-pending] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--text-2);
+}
+.tally-dot[data-light] {
+  animation: tally-light 240ms var(--ease-out) both;
+}
+@keyframes tally-light {
+  from { opacity: 0; }
+}
+
+.pulse-outline {
+  animation: pulse-outline 1.6s var(--ease-in-out) infinite;
+}
+@keyframes pulse-outline {
+  50% { opacity: 0.35; }
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 1.75px solid currentColor;
+  border-right-color: transparent;
+  animation: spin 800ms linear infinite;
+  flex: none;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Tile overlays fade in on hover or keyboard focus. */
+.tile .reveal {
+  opacity: 0;
+  transition: opacity 160ms var(--ease-out);
+}
+.tile:hover .reveal,
+.tile:focus-within .reveal,
+.tile[data-touch] .reveal {
+  opacity: 1;
+}
+
+.dock {
+  transition: opacity 120ms var(--ease-out);
+}
+.dock[data-hidden] {
+  opacity: 0;
+  transition-duration: 200ms;
+}
+
+.press {
+  transition: transform 120ms var(--ease-out), background-color 120ms, color 120ms, box-shadow 120ms, opacity 120ms;
+}
+.press:active:not(:disabled):not([data-disabled]) {
+  transform: scale(0.97);
+  transition-duration: 80ms;
+}
+
+.swap-icon > * {
+  transition: opacity 160ms var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0ms !important;
+    transition-property: opacity !important;
+    transition-duration: 120ms !important;
+    scroll-behavior: auto !important;
   }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
+  .pulse-outline, .tally-dot[data-light] {
+    animation: none !important;
   }
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
+  .press:active:not(:disabled) {
+    transform: none;
   }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
+  .spinner {
+    animation: spin 800ms linear infinite !important;
   }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
 }
