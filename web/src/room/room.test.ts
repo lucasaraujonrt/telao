@@ -185,3 +185,22 @@ test('feature messages reach their subscribers and malformed ones are dropped', 
   host.room.setName('  Lucão  ')
   await until(() => guest.state.members[0].name === 'Lucão', 'rename reaches the room')
 })
+
+test('the directory lets four people share and denies a fifth', async () => {
+  const network = createNetwork(), host = await join(network, 'Lucas')
+  const members = [host]
+  for (let i = 0; i < 4; i++) members.push(await join(network, 'Amigo ' + i, host.code))
+  await mesh(...members)
+  for (const member of members.slice(0, 4)) await share(member)
+  const notices: string[] = []
+  const fifth = members[4]
+  fifth.room.onNotice(notice => notices.push(notice))
+  fifth.room.shareScreen('game')
+  await until(() => notices.length > 0, 'deny notice')
+  expect(notices).toEqual(['share-denied'])
+  expect(fifth.state.screen).toEqual({ status: 'off' })
+  expect(fifth.media.displayRequests).toEqual([])
+  members[0].room.stopScreen()
+  await until(() => !fifth.state.tiles.has(me(members[0])), 'first sharer stopped')
+  await share(fifth)
+})
