@@ -700,7 +700,23 @@ $("enter").onsubmit = e => {
   if (code && !validRoom) { $("go").disabled = false; return; }
   start(roomCode || rand(24));
 };
-if (validRoom && store.get("telao-nick")) { myName = store.get("telao-nick"); $("go").disabled = true; start(roomCode); }
+// Browsers only let a page play sound after a click or key press. Auto-joining skipped that, so memes
+// stayed silent until someone clicked. With a saved name the join button is focused: Enter or one click
+// joins and unlocks audio for the whole session.
+if (validRoom && store.get("telao-nick")) $("go").focus();
+// Any sound the browser still blocks is replayed on the next click or key press, if it is recent.
+const blockedSounds = new Map(), nativePlay = HTMLMediaElement.prototype.play;
+HTMLMediaElement.prototype.play = function () {
+  const playback = nativePlay.call(this);
+  if (!(this instanceof HTMLVideoElement)) playback.catch(e => { if (e?.name === "NotAllowedError") blockedSounds.set(this, Date.now()); });
+  return playback;
+};
+const unlockSound = () => {
+  if (typeof ac !== "undefined" && ac?.state === "suspended") ac.resume();
+  blockedSounds.forEach((at, sound) => { if (Date.now() - at < 4000 && sound.currentTime === 0) nativePlay.call(sound).catch(() => {}); });
+  blockedSounds.clear();
+};
+addEventListener("pointerdown", unlockSound, true); addEventListener("keydown", unlockSound, true);
 function start(code) { iceConfig.then(config => openRoom(code, config)); }
 function openRoom(code, config) {
   const hubId = PREFIX + code;
