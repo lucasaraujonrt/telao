@@ -1,6 +1,6 @@
 # Telão web
 
-The React rewrite of Telão (see `../docs/rewrite-plan.md` and `../docs/design.md`). Production still serves `../public/`.
+The Telão app (see `../README.md`, `../docs/rewrite-plan.md` and `../docs/design.md`). Production serves this build.
 
 ## Run
 
