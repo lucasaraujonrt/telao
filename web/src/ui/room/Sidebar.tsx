@@ -76,7 +76,7 @@ export function Sidebar({ people, me, onCopy, action, onAway, onRename, onLeave 
   onLeave: () => void
 }) {
   const list = useRef<HTMLUListElement>(null)
-  useFlip(list)
+  useFlip(list, people.map(person => person.id).join(' '))
   const awayLabel = me.away ? 'Estou de volta' : 'Ficar ausente'
 
   return (

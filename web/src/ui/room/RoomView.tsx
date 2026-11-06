@@ -13,6 +13,7 @@ import { AUTOPLAY_BLOCKED, NOTICES } from '../copy'
 import { useColorScheme, useNarrow } from '../hooks'
 import { Dock } from './Dock'
 import { RenameDialog } from './RenameDialog'
+import { SelfPreview } from './SelfPreview'
 import { CopyLinkButton, Sidebar, type Person } from './Sidebar'
 import { Stage, type RenderOptions } from './Stage'
 import { Tile, type TileAudio } from './Tile'
@@ -49,6 +50,8 @@ export function RoomView({ room, snapshot }: { room: Room | null; snapshot: Room
   const [diagnostics, setDiagnostics] = useState(prefs.diagnostics.get)
   const [profile, setProfile] = useState(prefs.profile.get)
   const [mirror, setMirror] = useState(prefs.mirror.get)
+  const [selfShown, setSelfShown] = useState(prefs.selfView.get)
+  const [layoutEpoch, setLayoutEpoch] = useState(0)
   const [renaming, setRenaming] = useState(false)
   const [sheet, setSheet] = useState(false)
   const [idle, setIdle] = useState(false)
@@ -65,10 +68,14 @@ export function RoomView({ room, snapshot }: { room: Room | null; snapshot: Room
   const order = new Map(members.map((member, index) => [member.id, index]))
   const rank = (tile: TileData) => tile.owner === 'me' ? -1 : order.get(tile.owner) ?? members.length
   const all = [...tiles.values()].sort((a, b) => rank(a) - rank(b))
-  const screens = all.filter(tile => tile.kind === 'screen')
+  // Your own share stays off the stage: it is the small preview, and on the stage only when shown.
+  const selfTile = all.find(tile => tile.owner === 'me' && tile.kind === 'screen') ?? null
+  const screens = all.filter(tile => tile.kind === 'screen' && tile !== selfTile)
   const cameras = all.filter(tile => tile.kind === 'camera')
-  const activeTheater = !narrow && theater && tiles.has(theater) ? theater : null
-  const atCap = screens.filter(tile => tile.owner !== 'me').length >= 4
+  const focusable = [...screens, ...cameras, ...(selfTile && selfShown ? [selfTile] : [])]
+  const canFocus = (key: TileKey | null) => !!key && focusable.some(tile => tile.key === key)
+  const activeTheater = !narrow && canFocus(theater) ? theater : null
+  const atCap = screens.length >= 4
   const dockHidden = idle && !dockBusy && all.length > 0
 
   const me: Person = { id: 'me', name: snapshot.name, you: true, live, camera: camera.status === 'on', away: snapshot.away }
@@ -112,20 +119,22 @@ export function RoomView({ room, snapshot }: { room: Room | null; snapshot: Room
     void node?.requestFullscreen().catch(() => {})
   }, [])
 
-  const firstTile = all[0]?.key ?? null
+  const firstTile = focusable[0]?.key ?? null
+  const focusKeys = focusable.map(tile => tile.key).join(' ')
   useEffect(() => {
+    const canFocusNow = (key: TileKey | null) => !!key && focusKeys.split(' ').includes(key)
     const onKey = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || editable(event.target) || renaming) return
       if (event.key === 't' || event.key === 'T') {
         if (narrow) return
-        setTheater(current => current && tiles.has(current) ? null : hovered.current && tiles.has(hovered.current) ? hovered.current : firstTile)
+        setTheater(current => canFocusNow(current) ? null : canFocusNow(hovered.current) ? hovered.current : firstTile)
       } else if (event.key === 'Escape' && !document.fullscreenElement) {
         setTheater(null)
       }
     }
     addEventListener('keydown', onKey)
     return () => removeEventListener('keydown', onKey)
-  }, [narrow, renaming, tiles, firstTile])
+  }, [narrow, renaming, focusKeys, firstTile])
 
   const wake = () => {
     setIdle(false)
@@ -191,6 +200,18 @@ export function RoomView({ room, snapshot }: { room: Room | null; snapshot: Room
     )
   }
 
+  const showSelf = (shown: boolean) => { setSelfShown(shown); prefs.selfView.set(shown) }
+  const selfPreview = selfTile && (
+    <SelfPreview
+      shown={selfShown}
+      tile={selfShown && renderTile(selfTile, { thumbnail: true })}
+      onShow={() => showSelf(true)}
+      onHide={() => showSelf(false)}
+      onStop={() => room?.stopScreen()}
+      onFocus={() => setTheater(selfTile.key)}
+    />
+  )
+
   const sidebar = (inSheet: boolean) => (
     <Sidebar
       people={people}
@@ -217,7 +238,8 @@ export function RoomView({ room, snapshot }: { room: Room | null; snapshot: Room
       mirror={mirror}
       deaf={deaf}
       diagnostics={diagnostics}
-      theater={activeTheater !== null}
+      layout={activeTheater ? 'focus' : 'grid'}
+      canFocus={!narrow && firstTile !== null}
       onProfile={next => { setProfile(next); prefs.profile.set(next) }}
       onShare={share}
       onSwitch={() => { room?.stopScreen(); share() }}
@@ -227,7 +249,8 @@ export function RoomView({ room, snapshot }: { room: Room | null; snapshot: Room
       onMirror={on => { setMirror(on); prefs.mirror.set(on) }}
       onDeaf={setDeaf}
       onDiagnostics={on => { setDiagnostics(on); prefs.diagnostics.set(on) }}
-      onLeaveTheater={() => setTheater(null)}
+      onLayout={next => setTheater(next === 'focus' ? firstTile : null)}
+      onResetLayout={() => { prefs.layouts.clear(); setLayoutEpoch(epoch => epoch + 1) }}
       onBusy={setDockBusy}
     />
   )
@@ -249,7 +272,10 @@ export function RoomView({ room, snapshot }: { room: Room | null; snapshot: Room
         connecting={connecting}
         screens={screens}
         cameras={cameras}
+        self={selfPreview}
+        selfTile={selfShown ? selfTile : null}
         theater={activeTheater}
+        layoutEpoch={layoutEpoch}
         narrow={narrow}
         dockHidden={dockHidden}
         dock={dock}

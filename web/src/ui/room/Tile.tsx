@@ -136,8 +136,8 @@ export function Tile(props: TileProps) {
             </Button>
           </Tip>
           {canTheater && !fullscreen && !theater && (
-            <Tip label="Modo teatro" shortcut="T">
-              <Button variant="video" size="icon-sm" className="reveal" aria-label="Modo teatro (T)" onClick={props.onTheater}>
+            <Tip label="Destaque" shortcut="T">
+              <Button variant="video" size="icon-sm" className="reveal" aria-label="Destaque (T)" onClick={props.onTheater}>
                 <RectangleHorizontal strokeWidth={1.75} />
               </Button>
             </Tip>

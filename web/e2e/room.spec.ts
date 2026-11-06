@@ -101,7 +101,8 @@ test('three people share a screen and a camera, see each other, and leave', asyn
   })
 
   await test.step('every member sees the right tiles with frames flowing', async () => {
-    const seenByA = await expectTiles(a, { mine: ['me'], screens: 0, cameras: 1 })
+    // A's own share starts hidden: no tile and no <video> for it.
+    const seenByA = await expectTiles(a, { mine: [], screens: 0, cameras: 1 })
     const seenByB = await expectTiles(b, { mine: ['me:camera'], screens: 1, cameras: 0 })
     const seenByC = await expectTiles(c, { mine: [], screens: 1, cameras: 1 })
     // B and C see the same screen (A's), A and C the same camera (B's).
@@ -114,11 +115,22 @@ test('three people share a screen and a camera, see each other, and leave', asyn
       await expect(row(page, 'Ana').getByRole('img', { name: 'ao vivo' })).toBeVisible()
     }
     for (const page of [a, c]) await expect(row(page, 'Beto').getByRole('img', { name: 'Câmera ligada' })).toBeVisible()
-    await expect(a.getByText('Sua tela', { exact: true })).toBeVisible()
     await expect(c.locator('[data-tile-key]').getByText('Ana', { exact: true })).toBeVisible()
     await expect(c.locator('[data-tile-key]').getByText('Beto', { exact: true })).toBeVisible()
     // Every remote tile starts muted.
     for (const page of [b, c]) await expect(page.getByRole('button', { name: 'Ativar som' })).toHaveCount(1)
+  })
+
+  await test.step('A sees a hidden preview of their own share and can show it', async () => {
+    const preview = a.locator('[data-self-preview]')
+    await expect(preview).toHaveAttribute('data-self-preview', 'hidden')
+    await expect(preview).toContainText('Você está ao vivo')
+    await expect(a.locator('[data-tile-key="me"]')).toHaveCount(0)
+    await wake(a)
+    await a.getByRole('button', { name: 'Ver minha tela' }).click()
+    await expect(preview).toHaveAttribute('data-self-preview', 'shown')
+    await expectTiles(a, { mine: ['me'], screens: 0, cameras: 1 })
+    await expect(preview.getByText('Sua tela', { exact: true })).toBeVisible()
   })
 
   await test.step('the diagnostics toggle shows measured lines on the screen tile', async () => {
@@ -132,6 +144,27 @@ test('three people share a screen and a camera, see each other, and leave', asyn
     // The first sample can still read "medindo…"; a later one has real numbers.
     await expect(tile.locator('dl dd').nth(1)).toHaveText(/\d+\s*[x×]\s*\d+/)
     await c.keyboard.press('Escape')
+  })
+
+  await test.step('C drags the camera divider and the size survives a reload', async () => {
+    const camera = c.locator('[data-tile-key$=":camera"]')
+    const screen = c.locator('[data-tile-key]').filter({ hasText: 'Ana' })
+    const before = { camera: (await camera.boundingBox())!, screen: (await screen.boundingBox())! }
+    const handle = (await c.getByRole('separator', { name: 'Tamanho das câmeras' }).boundingBox())!
+    await c.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2)
+    await c.mouse.down()
+    await c.mouse.move(handle.x + handle.width / 2, handle.y - 60, { steps: 8 })
+    await c.mouse.move(handle.x + handle.width / 2, handle.y - 120, { steps: 8 })
+    await c.mouse.up()
+    const after = { camera: (await camera.boundingBox())!, screen: (await screen.boundingBox())! }
+    expect(after.camera.height).toBeGreaterThan(before.camera.height + 80)
+    expect(after.screen.height).toBeLessThan(before.screen.height - 40)
+
+    await c.reload()
+    await c.getByRole('button', { name: 'Entrar na sala' }).click()
+    await expectTiles(c, { mine: [], screens: 1, cameras: 1 })
+    await expect.poll(async () => Math.round((await camera.boundingBox())!.height)).toBe(Math.round(after.camera.height))
+    await expect(people(a)).toHaveCount(3, { timeout: 45_000 })
   })
 
   await test.step('C leaves and the others see two people', async () => {
@@ -148,8 +181,9 @@ test('three people share a screen and a camera, see each other, and leave', asyn
 
   await test.step('A stops sharing and the screen tile goes away for B', async () => {
     await wake(a)
-    await a.locator('[data-tile-key="me"]').hover()
+    await a.locator('[data-self-preview]').hover()
     await a.getByRole('button', { name: 'Parar de mostrar' }).click()
+    await expect(a.locator('[data-self-preview]')).toHaveCount(0)
     await expectTiles(b, { mine: ['me:camera'], screens: 0, cameras: 0 })
     await expect(row(b, 'Ana').getByRole('img', { name: 'ao vivo' })).toHaveCount(0)
   })

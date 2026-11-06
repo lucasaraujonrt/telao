@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useSyncExternalStore, type RefObject } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useSyncExternalStore, type RefObject } from 'react'
 
 export function useMediaQuery(query: string): boolean {
   return useSyncExternalStore(
@@ -33,13 +33,16 @@ function measure(root: HTMLElement) {
 const MOVE = { duration: 240, easing: 'cubic-bezier(0.65, 0, 0.35, 1)' }
 
 /**
- * FLIP for children marked `data-flip="<key>"`: after each render, anything that moved animates from
- * its old box to its new one, and a newcomer fades in at its place. `data-lights` on a newcomer gives
- * it the lights-on entrance instead. Nothing animates on the first render or after a resize.
+ * FLIP for children marked `data-flip="<key>"`: when `arrangement` changes (a tile joins or leaves,
+ * the focus moves), anything that moved animates from its old box to its new one, and a newcomer
+ * fades in at its place. `data-lights` on a newcomer gives it the lights-on entrance instead. Nothing
+ * animates on the first render, after a window resize, or while the arrangement holds, so dragging a
+ * divider never animates. Call the returned function once a drag ends to take a fresh measure.
  */
-export function useFlip(container: RefObject<HTMLElement | null>) {
+export function useFlip(container: RefObject<HTMLElement | null>, arrangement: string) {
   const rects = useRef<Map<string, DOMRect> | null>(null)
   const viewport = useRef('')
+  const arranged = useRef(arrangement)
 
   useLayoutEffect(() => {
     const root = container.current
@@ -51,7 +54,9 @@ export function useFlip(container: RefObject<HTMLElement | null>) {
     const size = `${innerWidth}x${innerHeight}`
     const resized = size !== viewport.current
     viewport.current = size
-    if (!previous || resized || reducedMotion()) return
+    const rearranged = arrangement !== arranged.current
+    arranged.current = arrangement
+    if (!previous || resized || !rearranged || reducedMotion()) return
     root.querySelectorAll<HTMLElement>('[data-flip]').forEach(node => {
       const key = node.dataset.flip!, rect = next.get(key)!, before = previous.get(key)
       if (!before) {
@@ -80,4 +85,6 @@ export function useFlip(container: RefObject<HTMLElement | null>) {
     observer.observe(root)
     return () => observer.disconnect()
   }, [container])
+
+  return useCallback(() => { if (container.current) rects.current = measure(container.current) }, [container])
 }

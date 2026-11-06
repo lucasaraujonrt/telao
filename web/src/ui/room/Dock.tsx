@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { Camera, Check, ChevronDown, Minimize2, Monitor, Settings, Volume2, VolumeX } from 'lucide-react'
+import { Camera, Check, ChevronDown, Monitor, Settings, Volume2, VolumeX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from '@/components/ui/popover'
 import { Switch } from '@/components/ui/switch'
@@ -14,6 +14,12 @@ import { Segmented } from '../Segmented'
 import { Tip } from '../tip'
 
 type Menu = 'share' | 'camera' | 'settings' | null
+export type StageLayout = 'grid' | 'focus'
+
+const LAYOUTS: ReadonlyArray<{ value: StageLayout; label: string }> = [
+  { value: 'grid', label: 'Grade' },
+  { value: 'focus', label: 'Destaque' },
+]
 
 export interface DockProps {
   disabled: boolean
@@ -26,7 +32,9 @@ export interface DockProps {
   mirror: boolean
   deaf: boolean
   diagnostics: boolean
-  theater: boolean
+  layout: StageLayout
+  /** False on narrow screens and on an empty stage: there is nothing to focus. */
+  canFocus: boolean
   onProfile: (profile: ScreenProfileName) => void
   onShare: () => void
   onSwitch: () => void
@@ -36,7 +44,8 @@ export interface DockProps {
   onMirror: (on: boolean) => void
   onDeaf: (on: boolean) => void
   onDiagnostics: (on: boolean) => void
-  onLeaveTheater: () => void
+  onLayout: (layout: StageLayout) => void
+  onResetLayout: () => void
   onBusy: (busy: boolean) => void
   /** Phase 3: reactions, throwables and the memes button go here, after a divider. */
   toolbar?: ReactNode
@@ -58,7 +67,7 @@ const Chevron = () => (
 )
 
 export function Dock(props: DockProps) {
-  const { disabled, hidden, theater } = props
+  const { disabled, hidden } = props
   const [menu, setMenu] = useState<Menu>(null)
   const root = useRef<HTMLDivElement>(null)
   const [focusInside, setFocusInside] = useState(false)
@@ -98,14 +107,14 @@ export function Dock(props: DockProps) {
             Mostrar diagnóstico nas telas
             <Switch checked={props.diagnostics} onCheckedChange={props.onDiagnostics} />
           </label>
+          <Button variant="secondary" onClick={() => { setMenu(null); props.onResetLayout() }}>Restaurar tamanhos</Button>
         </PopoverContent>
       </Popover>
-      {theater && (
-        <Tip label="Sair do modo teatro" shortcut="Esc">
-          <Button variant="icon" size="icon" aria-label="Sair do modo teatro (Esc)" onClick={props.onLeaveTheater}>
-            <Minimize2 />
-          </Button>
-        </Tip>
+      {props.canFocus && (
+        <>
+          <Divider />
+          <Segmented label="Layout" value={props.layout} options={LAYOUTS} onChange={props.onLayout} className="w-auto flex-nowrap" />
+        </>
       )}
       {props.toolbar && <><Divider />{props.toolbar}</>}
     </div>
