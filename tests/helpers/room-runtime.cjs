@@ -59,10 +59,11 @@ function network() {
   const peers = new Map(), calls = [], errors = [];
   let sequence = 0;
   class Peer extends EventEmitter {
-    constructor(id = `peer-${++sequence}`) {
-      super(); this.id = id; this.destroyed = false; this.connections = [];
+    constructor(id) {
+      if (typeof id !== 'string') id = `peer-${++sequence}`;
+      super(); this.id = id; this.destroyed = false; this.open = false; this.disconnected = false; this.connections = [];
       if (peers.has(id)) { queueMicrotask(() => this.emit('error', { type: 'unavailable-id' })); return; }
-      peers.set(id, this); queueMicrotask(() => { if (!this.destroyed) this.emit('open', id); });
+      peers.set(id, this); queueMicrotask(() => { if (!this.destroyed) { this.open = true; this.emit('open', id); } });
     }
     connect(id) {
       const outgoing = new Connection(id), incoming = new Connection(this.id);
@@ -103,14 +104,14 @@ function runtime(net, name, invitation = null) {
   const element = id => { if (!elements.has(id)) elements.set(id, new Element()); return elements.get(id); };
   element('streamQuality').value = 'game'; element('cameraEffect').value = 'normal'; element('cameraMirror').checked = true;
   const sandbox = {
-    console, crypto, TextEncoder, btoa, atob, structuredClone, PREFIX: 'telao-', MAX: 4, Peer: net.Peer,
+    console, crypto, TextEncoder, btoa, atob, structuredClone, PREFIX: 'telao-', MAX: 4, Peer: net.Peer, iceConfig: Promise.resolve({ iceServers: [] }), retryServer() {},
     TelaoStreaming: { createStreamController: options => Streaming.createStreamController({ ...options, sampleInterval: 0 }) },
     TelaoCamera: Camera,
     $: element, myName: name, names: new Map(), notifOk: new Map(), awayIds: new Set(),
     game: null, invite: null, view: { theater: false, focus: null }, updateCaptureBusy() {}, updateStreamingPreferences() {},
     render() {}, rename() {}, broadcast() {}, sendTo() {}, nameOf() {}, toWire() {}, fromWire() {}, announce() {},
     hello: () => ({ t: 'hello', name, notif: false, away: false }), watch() {},
-    store: { set() {} }, color: () => '#fff', member: () => new Element(),
+    store: { get: () => null, set() {} }, color: () => '#fff', member: () => new Element(),
     enterRoom(hash) { sandbox.entered = hash; },
     addTile(id, stream) { const tile = new Element(); tile.dataset.id = id; tile.stream = stream; if (id.endsWith(':camera')) tile.attributes['data-camera'] = true; tiles.set(id, tile); },
     dropTile: id => tiles.delete(id), tileOf: id => tiles.get(id),
@@ -130,7 +131,7 @@ function runtime(net, name, invitation = null) {
   vm.createContext(sandbox); vm.runInContext(source, sandbox, { filename: 'index-start.js' }); sandbox.start(invitation || 'open-room-123');
   return {
     sandbox, element, tiles, intervals, listeners,
-    get state() { return sandbox.telaoDebug?.(); },
+    get state() { return sandbox.telaoDebug?.() || { state: 'connecting', members: [] }; },
     get invitation() { return sandbox.entered; },
     tick(ms) { for (const timer of [...intervals]) if (timer.ms === ms) timer.callback(); },
     runTimeouts(maxMs = Infinity) { for (const timer of [...timeouts]) if (timer.ms <= maxMs) { timeouts.delete(timer); timer.callback(); } },

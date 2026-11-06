@@ -93,13 +93,26 @@ test('viewer preferences still reduce secondary and hidden video and restore the
   await until(() => outgoing.applied.at(-1)?.encodings[0].maxFramerate === 60, 'primary video restored');
 });
 
-test('a directory error releases ownership so the room recovers without refreshing or stopping capture', async t => {
+test('a network blip on the live directory keeps the room hosted and joinable', async t => {
+  const net = network(), host = await join(net, 'Lucas', null, t);
+  await host.element('share').onclick();
+  await until(() => host.tiles.has('me'), 'local capture');
+  const directory = net.peers.get('telao-' + host.invitation);
+  directory.emit('error', { type: 'network' });
+  assert.equal(host.state.hosting, true);
+  assert.equal(directory.destroyed, false);
+  const guest = await join(net, 'Amigo', host.invitation, t);
+  await mesh(host, guest);
+  await until(() => guest.tiles.has(host.state.me), 'video after the blip');
+});
+
+test('losing the directory id releases ownership so the room recovers without refreshing or stopping capture', async t => {
   const net = network(), host = await join(net, 'Lucas', null, t);
   await host.element('share').onclick();
   await until(() => host.tiles.has('me'), 'local capture');
   const directoryId = 'telao-' + host.invitation;
   const previous = net.peers.get(directoryId);
-  previous.emit('error', { type: 'network' });
+  previous.emit('error', { type: 'unavailable-id' });
   assert.equal(host.state.hosting, false);
   host.tick(2000);
   await until(() => host.state.hosting && net.peers.get(directoryId) !== previous, 'directory recovery');
