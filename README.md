@@ -2,7 +2,7 @@
 
 Peer-to-peer screen sharing for a Discord friend group. Someone opens a room, drops the link in Discord, and up to eight people watch each other's games, with up to four screens live at once. Cameras, room-wide meme sounds, reactions and tomatoes thrown at whoever is live. No accounts, no media server.
 
-Live at **https://telao-snowy.vercel.app**. The UI is in Portuguese (Brazil).
+The UI is in Portuguese (Brazil).
 
 ![Three people in a room: a shared screen, two cameras, a tomato, an egg, a slipper, reactions and the memes panel](docs/demo.gif)
 
