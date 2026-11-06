@@ -596,7 +596,7 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
         <button id="comboRandom" class="yes" title="Atalho: V">Combo aleatório</button>
         <div id="tray" class="hidden"><span id="trayList"></span><button id="trayFire" class="no">Soltar combo</button><button class="ib" id="trayClear" title="Limpar combo">✕</button></div>
       </div>
-      <div class="memevol"><button class="ib" id="hush" title="Parar os memes tocando agora">■</button><input type="range" id="memeVol" min="0" max="100" value="40" aria-label="Volume dos memes"><span id="memePct">40%</span></div>
+      <div class="memevol"><button class="ib" id="soundsOn" aria-pressed="false" title="Ativar os sons da sala">🔇</button><button class="ib" id="hush" title="Parar os memes tocando agora">■</button><input type="range" id="memeVol" min="0" max="100" value="40" aria-label="Volume dos memes"><span id="memePct">40%</span></div>
       <form id="addMeme" class="hidden">
         <p class="hint">Clique num meme para esconder. Para adicionar, no myinstants clique com o botão direito em “Download MP3”, copie o link e cole aqui.</p>
         <input type="text" id="newLabel" placeholder="Nome do meme" maxlength="30" aria-label="Nome do meme">
@@ -1291,12 +1291,13 @@ const validKey = k => typeof k === "string" && (MEMES.some(m => m[0] === k) || /
 const cleanLabel = l => String(l || "").replace(/\s+/g, " ").trim().slice(0, 30);
 const memeLabel = new Map(MEMES);
 const playing = new Set(), lastFrom = new Map();
-let memeVol = +(store.get("telao-memevol") ?? 40) / 100, cooldown = false, editing = false;
+// Sounds start off every visit; each person turns them on when they want. memeVol is the volume in effect.
+let soundsOn = false, memeLevel = +(store.get("telao-memevol") ?? 40) / 100, memeVol = 0, cooldown = false, editing = false;
 let custom = [], hidden = new Set();
 try { custom = (JSON.parse(store.get("telao-custom")) || []).filter(([k]) => validKey(k)); } catch {}
 try { hidden = new Set(JSON.parse(store.get("telao-hidden")) || []); } catch {}
 custom.forEach(([k, l]) => memeLabel.set(k, l));
-$("memeVol").value = Math.round(memeVol * 100); $("memePct").textContent = $("memeVol").value + "%";
+$("memeVol").value = Math.round(memeLevel * 100); $("memePct").textContent = $("memeVol").value + "%";
 
 const KEYS = ["q", "w", "e", "r"];
 let bound = { q: "faaah", w: "a-risada-do-kiko", e: "rojao-super-estourado", r: "psycho-scream-soundbible" };
@@ -1369,10 +1370,18 @@ function paintKeys() {
     if (key && !editing) { const kb = document.createElement("kbd"); kb.textContent = key.toUpperCase(); b.append(kb); }
   });
 }
-$("memeVol").oninput = e => {
-  memeVol = e.target.value / 100; $("memePct").textContent = e.target.value + "%";
-  store.set("telao-memevol", e.target.value);
+function setSounds(on) {
+  soundsOn = on; memeVol = on ? memeLevel : 0;
+  $("soundsOn").textContent = on ? "🔊" : "🔇"; $("soundsOn").setAttribute("aria-pressed", String(on));
+  $("soundsOn").title = on ? "Desativar os sons da sala" : "Ativar os sons da sala";
   playing.forEach(a => a.volume = memeVol); modeAudio.forEach(a => a.volume = memeVol);
+  if (!on) { playing.forEach(a => a.pause()); playing.clear(); }
+}
+$("soundsOn").onclick = () => { setSounds(!soundsOn); toast(soundsOn ? "Sons da sala ativados." : "Sons da sala desativados."); };
+$("memeVol").oninput = e => {
+  memeLevel = e.target.value / 100; $("memePct").textContent = e.target.value + "%";
+  store.set("telao-memevol", e.target.value);
+  setSounds(true);
 };
 $("hush").onclick = () => { playing.forEach(a => a.pause()); playing.clear(); };
 function setAway(on) {
@@ -1401,7 +1410,7 @@ function soundMeme(k, gain = 1) {
   if (audio.deaf || memeVol === 0) return;
   const a = new Audio(memeUrl(k)); a.volume = Math.min(1, memeVol * gain);
   playing.add(a); a.onended = () => playing.delete(a);
-  a.play().catch(() => { playing.delete(a); toast("Clique em qualquer lugar para ouvir os memes."); });
+  a.play().catch(() => playing.delete(a));
 }
 
 /* ---------- combo edit: several memes stacked at once ---------- */
@@ -1683,7 +1692,7 @@ function onTroll(m, from) {
   if (m.kind === "bomb") bomb(victim);
   if (victim !== "me") return toast(`${from === "me" ? "Você" : nameOf(from)} mandou ${TROLL_TEXT[m.kind]} pra ${nameOf(victim)}`);
   // from here on, this computer is the victim's
-  if (audio.deaf) return;
+  if (audio.deaf || !soundsOn) return;
   const loud = Math.min(1, .45 + memeVol);
   if (m.kind === "ping") { const a = new Audio("sounds/discord-message.mp3"); a.volume = loud; a.play().catch(() => {}); }
   else if (m.kind === "join") { const a = new Audio("sounds/discord-join.mp3"); a.volume = loud; a.play().catch(() => {}); }
@@ -1710,7 +1719,7 @@ function bomb(id) {
     boom.animate([{ opacity: 0, transform: "scale(.3)" }, { opacity: 1, transform: "scale(1.1)", offset: .15 }, { opacity: 1, offset: .6 }, { opacity: 0, transform: "scale(1.3)" }], { duration: 1400 });
     setTimeout(() => boom.remove(), 1400);
     t.classList.remove("slap"); void t.offsetWidth; t.classList.add("slap");
-    if (!audio.deaf) { const a = new Audio("sounds/explosion.mp3"); a.volume = id === "me" ? 1 : memeVol * .6; a.play().catch(() => {}); }
+    if (!audio.deaf && (id === "me" || soundsOn)) { const a = new Audio("sounds/explosion.mp3"); a.volume = id === "me" ? 1 : memeVol * .6; a.play().catch(() => {}); }
   };
   tick();
 }
