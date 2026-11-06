@@ -47,3 +47,34 @@ test('camera call metadata needs a safe integer session', () => {
   expect(parse(CameraCallMetadata, { kind: 'camera', session: '3' })).toBe(null)
   expect(parse(CameraCallMetadata, undefined)).toBe(null)
 })
+
+test('a meme keeps its key and cleans its label, or drops a label that is not text', () => {
+  expect(parse(MemberMessage, { t: 'meme', k: 'faaah', label: '  Um   meme\n com nome muito comprido demais  ' }))
+    .toEqual({ t: 'meme', k: 'faaah', label: 'Um meme com nome muito comprid' })
+  expect(parse(MemberMessage, { t: 'meme', k: 'faaah', label: 42 })).toEqual({ t: 'meme', k: 'faaah' })
+  expect(parse(MemberMessage, { t: 'meme', k: 'faaah', label: '   ' })).toEqual({ t: 'meme', k: 'faaah' })
+  expect(parse(MemberMessage, { t: 'meme', k: 'faaah' })).toEqual({ t: 'meme', k: 'faaah' })
+})
+
+test.each([
+  { t: 'meme' },
+  { t: 'meme', k: 7 },
+  { t: 'meme', k: 'x:' + 'a'.repeat(99) },
+  { t: 'react', e: '👍', target: 'a' },
+  { t: 'react', e: '🔥' },
+  { t: 'react', e: '🔥', target: 'a'.repeat(121) },
+  { t: 'throw', item: 'pedra', target: 'a', x: 0.5, y: 0.5 },
+  { t: 'throw', item: 'ovo', target: 'a', x: Number.NaN, y: 0.5 },
+  { t: 'throw', item: 'ovo', target: 'a', x: Infinity, y: 0.5 },
+  { t: 'throw', item: 'ovo', x: 0.5, y: 0.5 },
+])('zoeira message drops %j', data => {
+  expect(parse(MemberMessage, data)).toBe(null)
+})
+
+test('reactions and throws keep their target, and a throw lands inside the tile', () => {
+  expect(parse(MemberMessage, { t: 'react', e: '💀', target: 'abc:camera' })).toEqual({ t: 'react', e: '💀', target: 'abc:camera' })
+  expect(parse(MemberMessage, { t: 'throw', item: 'chinelo', target: 'abc', x: -3, y: 7 }))
+    .toEqual({ t: 'throw', item: 'chinelo', target: 'abc', x: 0, y: 1 })
+  expect(parse(MemberMessage, { t: 'throw', item: 'tomate', target: 'abc', x: 0.25, y: 0.75 }))
+    .toEqual({ t: 'throw', item: 'tomate', target: 'abc', x: 0.25, y: 0.75 })
+})

@@ -49,14 +49,25 @@ const CoreMessages = [
   message('camera-stop', { session }),
 ] as const
 
-// Leaf values such as meme keys, items and emoji stay strings: each feature checks its own list.
+// Throwables and reactions are fixed lists, so they are checked here. Meme keys stay strings: the
+// memes feature checks them against its board and the myinstants slug rule.
+export const ITEMS = ['tomate', 'ovo', 'chinelo'] as const
+export type Item = (typeof ITEMS)[number]
+export const REACTS = ['😂', '💀', '🔥', '🤡', '😭'] as const
+export type Reaction = (typeof REACTS)[number]
+export const LABEL_LENGTH = 30
+export const cleanLabel = (label: string) => label.replace(/\s+/g, ' ').trim().slice(0, LABEL_LENGTH)
+// A tile key on the wire: a peer id, maybe with ":camera".
+const target = z.string().max(120)
+// A point on a tile as fractions of its width and height.
+const fraction = z.number().transform(value => Math.min(1, Math.max(0, value)))
 const duel = <T extends string, S extends z.ZodRawShape>(t: T, shape: S) => message(t, { d: z.string(), ...shape })
 const FeatureMessages = [
   message('troll', { kind: z.string(), target: z.string(), k: z.string().optional(), text: z.string().optional(), n: z.number().optional() }),
-  message('meme', { k: z.string(), label: z.string().optional() }),
+  message('meme', { k: z.string().max(100), label: z.unknown().transform(value => typeof value === 'string' ? cleanLabel(value) || undefined : undefined).optional() }),
   message('combo', { ks: z.array(z.unknown()) }),
-  message('react', { e: z.string(), target: z.string() }),
-  message('throw', { item: z.string(), target: z.string(), x: z.number(), y: z.number() }),
+  message('react', { e: z.enum(REACTS), target }),
+  message('throw', { item: z.enum(ITEMS), target, x: fraction, y: fraction }),
   message('mode', { mode: z.string(), track: z.string(), reels: z.array(z.number()).optional(), cobra: z.number().optional(), aura: z.unknown().optional() }),
   message('game', { r: z.string(), seed: z.number() }),
   message('gscore', { r: z.string(), s: z.number(), done: z.boolean() }),
