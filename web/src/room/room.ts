@@ -97,6 +97,8 @@ export interface Viewing {
   hidden: boolean
   /** The fullscreen tile, or the theater focus, or null. */
   focus: TileKey | null
+  /** Tiles drawn too small to need full quality, such as a narrow panel in the grid. */
+  thumbnails: ReadonlySet<TileKey>
 }
 
 export interface Room {
@@ -169,7 +171,7 @@ export function createRoom(options: RoomOptions): Room {
   let stream: MediaStream | null = null, capturing = false, screen: ScreenState = { status: 'off' }, requestedProfile: ScreenProfileName = 'game'
   let myId: PeerId | null = null, hub: { peer: SignalPeer; conns: Map<PeerId, DataChannel> } | null = null
   let hubConn: DataChannel | null = null, claiming = false, directoryPeer: SignalPeer | null = null
-  let viewing: Viewing = { hidden: false, focus: null }
+  let viewing: Viewing = { hidden: false, focus: null, thumbnails: new Set() }
   let snapshot = buildSnapshot()
 
   const every = (callback: () => void, ms: number) => { intervals.add(timers.setInterval(callback, ms)) }
@@ -422,10 +424,10 @@ export function createRoom(options: RoomOptions): Room {
     void streaming.refresh()
   }
   function sendPreferences() {
-    const { focus, hidden } = viewing
+    const { focus, hidden, thumbnails } = viewing
     conns.forEach((member, id) => {
       if (!connectedMember(id) || !member.ready) return
-      const preference: StreamPreference = hidden ? 'hidden' : focus && focus !== id ? 'thumbnail' : 'primary'
+      const preference: StreamPreference = hidden ? 'hidden' : (focus && focus !== id) || thumbnails.has(id) ? 'thumbnail' : 'primary'
       if (sentPreferences.get(member.channel) === preference) return
       sentPreferences.set(member.channel, preference)
       member.channel.send({ t: 'stream-preference', preference })
@@ -560,7 +562,7 @@ export function createRoom(options: RoomOptions): Room {
       return () => { set.delete(entry) }
     },
     shareScreen, stopScreen, startCamera, stopCamera, setCameraEffect,
-    setViewing(next) { viewing = { ...next }; sendPreferences() },
+    setViewing(next) { viewing = { ...next, thumbnails: new Set(next.thumbnails) }; sendPreferences() },
     setName(name) {
       const next = name.trim().slice(0, NAME_LENGTH)
       if (!next) return

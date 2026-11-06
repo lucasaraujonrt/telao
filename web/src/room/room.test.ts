@@ -90,12 +90,16 @@ test('viewer preferences still reduce secondary and hidden video and restore the
   await until(() => guest.state.tiles.has(me(host)), 'automatic screen reception')
   const outgoing = network.calls.find(call => call.sender === me(host))!.outgoing
   const framerate = () => outgoing.applied.at(-1)?.encodings?.[0].maxFramerate
-  guest.room.setViewing({ hidden: false, focus: 'another-screen' })
+  guest.room.setViewing({ hidden: false, focus: 'another-screen', thumbnails: new Set() })
   await until(() => framerate() === 15, 'thumbnail video')
-  guest.room.setViewing({ hidden: true, focus: 'another-screen' })
+  guest.room.setViewing({ hidden: true, focus: 'another-screen', thumbnails: new Set() })
   await until(() => framerate() === 2, 'hidden video')
-  guest.room.setViewing({ hidden: false, focus: null })
+  guest.room.setViewing({ hidden: false, focus: null, thumbnails: new Set() })
   await until(() => framerate() === 60, 'primary video restored')
+  guest.room.setViewing({ hidden: false, focus: null, thumbnails: new Set([me(host)]) })
+  await until(() => framerate() === 15, 'a small grid tile gets thumbnail video')
+  guest.room.setViewing({ hidden: false, focus: null, thumbnails: new Set(['another-screen']) })
+  await until(() => framerate() === 60, 'another small tile leaves this screen primary')
 })
 
 test('a network blip on the live directory keeps the room hosted and joinable', async () => {

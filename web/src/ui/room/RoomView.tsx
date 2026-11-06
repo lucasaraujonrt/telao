@@ -44,6 +44,7 @@ export function RoomView({ room, snapshot }: { room: Room | null; snapshot: Room
   const [theater, setTheater] = useState<TileKey | null>(null)
   const [fullscreen, setFullscreen] = useState<TileKey | null>(null)
   const [deaf, setDeaf] = useState(false)
+  const [small, setSmall] = useState<ReadonlySet<TileKey>>(new Set())
   const [audio, setAudio] = useState<ReadonlyMap<TileKey, TileAudio>>(new Map())
   const [diagnostics, setDiagnostics] = useState(prefs.diagnostics.get)
   const [profile, setProfile] = useState(prefs.profile.get)
@@ -86,17 +87,18 @@ export function RoomView({ room, snapshot }: { room: Room | null; snapshot: Room
   useEffect(() => room?.onNotice(notice => { toast(NOTICES[notice]) }), [room])
 
   // The core sends each sharer a preference for us: hidden when the page is, thumbnail for anyone
-  // but the fullscreen or theater tile.
+  // but the fullscreen or theater tile, and for any tile drawn small.
   useEffect(() => {
     if (!room) return
     const update = () => room.setViewing({
       hidden: document.visibilityState === 'hidden' && !document.pictureInPictureElement,
       focus: fullscreen ?? activeTheater,
+      thumbnails: small,
     })
     update()
     document.addEventListener('visibilitychange', update)
     return () => document.removeEventListener('visibilitychange', update)
-  }, [room, fullscreen, activeTheater])
+  }, [room, fullscreen, activeTheater, small])
 
   useEffect(() => {
     const update = () => setFullscreen(document.fullscreenElement?.getAttribute('data-tile-key') ?? null)
@@ -179,6 +181,12 @@ export function RoomView({ room, snapshot }: { room: Room | null; snapshot: Room
         onFullscreen={() => toggleFullscreen(tile.key)}
         onTheater={() => setTheater(tile.key)}
         onStop={mine && tile.kind === 'screen' ? () => room?.stopScreen() : undefined}
+        onSmall={isSmall => setSmall(current => {
+          if (current.has(tile.key) === isSmall) return current
+          const next = new Set(current)
+          if (isSmall) next.add(tile.key); else next.delete(tile.key)
+          return next
+        })}
       />
     )
   }

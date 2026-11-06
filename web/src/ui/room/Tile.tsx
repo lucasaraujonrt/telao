@@ -8,6 +8,9 @@ import type { DiagnosticRow } from '@/lib/format'
 import type { Tile as TileData } from '../../room/room'
 import { Tip } from '../tip'
 
+/** Below this width a tile shows no more detail than the thumbnail stream carries. */
+const SMALL_WIDTH = 360
+
 export interface TileAudio { muted: boolean; volume: number }
 
 export interface TileProps {
@@ -29,6 +32,8 @@ export interface TileProps {
   onFullscreen: () => void
   onTheater: () => void
   onStop?: () => void
+  /** Called with true while the tile is drawn narrower than SMALL_WIDTH, and with false when it unmounts. */
+  onSmall: (small: boolean) => void
 }
 
 /** One stream: a screen or a camera. Every tile starts muted; the core never tells us about sound. */
@@ -46,6 +51,16 @@ export function Tile(props: TileProps) {
   // You never hear your own share; a camera without sound has nothing to mute.
   const volumeControl = !mine && !thumbnail && (screen || hasAudio)
   const blocked = useEffectEvent(() => props.onBlocked())
+  const root = useRef<HTMLDivElement>(null)
+  const reportSmall = useEffectEvent((small: boolean) => props.onSmall(small))
+
+  useEffect(() => {
+    const node = root.current
+    if (!node) return
+    const observer = new ResizeObserver(([entry]) => reportSmall(entry.contentRect.width < SMALL_WIDTH))
+    observer.observe(node)
+    return () => { observer.disconnect(); reportSmall(false) }
+  }, [])
 
   useEffect(() => {
     const element = video.current
@@ -69,6 +84,7 @@ export function Tile(props: TileProps) {
 
   return (
     <div
+      ref={root}
       data-tile-key={tile.key}
       className={cn(
         'tile on-video group/tile relative size-full overflow-hidden bg-stage',
