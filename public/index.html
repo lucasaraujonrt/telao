@@ -427,6 +427,7 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
 #room #cameraEffects,#room #cameraMirrorLabel{font-size:12px;color:var(--giz2)}
 #room #cameraEffect{background:#1e1f22;border:0;border-radius:4px;padding:4px 6px;font-size:12px;max-width:120px}
 .stream-quality{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--giz2)}
+.diag-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--giz2)}
 #streamQuality{width:100%;min-width:0;padding:6px;border:0;border-radius:4px;font:inherit;color:var(--giz);background:var(--tinta)}
 .calls{display:flex;gap:8px}
 .call{flex:1;display:grid;place-items:center;height:32px;padding:0;border-radius:4px;background:#2b2d31;color:var(--giz);box-shadow:none}
@@ -535,7 +536,7 @@ body[data-armed=chinelo] .tile{cursor:url("data:image/svg+xml,%3Csvg xmlns='http
       <span id="note" class="note hidden"></span>
       <div class="camopts"><label id="cameraEffects" class="hidden">Efeito <select id="cameraEffect" aria-label="Efeito da câmera"><option value="normal">Normal</option><option value="mono">Cinema P&amp;B</option><option value="vhs">VHS da tropa</option><option value="neon">Neon</option><option value="pixel">Pixelado</option></select></label><label id="cameraMirrorLabel" class="hidden"><input id="cameraMirror" type="checkbox" checked> Espelhar</label></div>
       <label class="stream-quality">Transmissão <select id="streamQuality"><option value="game">Jogos · 720p / 60 fps</option><option value="detail">Texto · 1080p / 30 fps</option><option value="light">Leve · 720p / 30 fps</option></select></label>
-      <label class="stream-quality"><input id="diag" type="checkbox"> Mostrar diagnóstico nas telas</label>
+      <label class="diag-toggle"><input id="diag" type="checkbox"> Mostrar diagnóstico nas telas</label>
       <div class="calls">
         <button id="camera" class="call" aria-pressed="false" title="Ligar câmera" aria-label="Ligar câmera"><svg class="ic" aria-hidden="true"><use href="#i-video"/></svg></button>
         <button id="share" class="call" title="Mostrar minha tela" aria-label="Mostrar minha tela"><svg class="ic" aria-hidden="true"><use href="#i-screen"/></svg></button>
@@ -674,6 +675,12 @@ let away = store.get("telao-away") === "1";
 const awayIds = new Set();
 const hello = () => ({ t: "hello", name: myName, notif: canNotify(), away });
 
+// PeerJS's bundled TURN servers no longer answer, so a peer behind a strict NAT got a black screen.
+// Our own list comes from /api/ice; on any failure fall back to STUN, which covers most networks.
+const iceConfig = fetch("/api/ice", { signal: AbortSignal.timeout(3000) })
+  .then(r => r.ok ? r.json() : Promise.reject())
+  .then(({ iceServers }) => Array.isArray(iceServers) && iceServers.length ? { iceServers } : Promise.reject())
+  .catch(() => ({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] }));
 const code = location.hash.slice(1);
 const roomCode = code.startsWith("v1.") ? code.split(".")[1] : code;
 const validRoom = /^[A-Za-z0-9_-]{6,100}$/.test(roomCode);
@@ -694,9 +701,10 @@ $("enter").onsubmit = e => {
   start(roomCode || rand(24));
 };
 if (validRoom && store.get("telao-nick")) { myName = store.get("telao-nick"); $("go").disabled = true; start(roomCode); }
-function start(code) {
+function start(code) { iceConfig.then(config => openRoom(code, config)); }
+function openRoom(code, config) {
   const hubId = PREFIX + code;
-  const peer = new Peer();
+  const peer = new Peer({ config });
   const conns = new Map();     // peerId -> DataConnection (member mesh)
   const cameraCalls = new Map(), incomingScreens = new Map(), incomingCameras = new Map(), stoppedCameras = new Map();
   const connecting = new Map(), roomMembers = new Set();
@@ -792,7 +800,7 @@ function start(code) {
   function claimHub() {
     if (ended || hub || claiming) return;
     claiming = true;
-    const directory = new Peer(hubId);
+    const directory = new Peer(hubId, { config });
     directoryPeer = directory;
     const releaseDirectory = () => {
       if (directoryPeer !== directory) return;
@@ -925,6 +933,8 @@ function start(code) {
     call.on("close", () => {
       if (calls.get(id) !== call) return;
       calls.delete(id); streaming.remove(id, call);
+      // The data channel can survive while this media connection fails; try the screen again.
+      setTimeout(() => { if (!calls.has(id)) callPeer(id); }, 3000);
     });
     call.on("error", () => call.close());
     tuneScreenSenders();
@@ -981,6 +991,12 @@ function start(code) {
     cameraCalls.get(id)?.close();
     const call = peer.call(id, cameraStream, { metadata: { kind: "camera", session: cameraSession } });
     cameraCalls.set(id, call);
+    call.on("close", () => {
+      if (cameraCalls.get(id) !== call) return;
+      cameraCalls.delete(id);
+      setTimeout(() => { if (!cameraCalls.has(id)) callCamera(id); }, 3000);
+    });
+    call.on("error", () => call.close());
   }
   function stopCamera() {
     cameraCancelled++;
