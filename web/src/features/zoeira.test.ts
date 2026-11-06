@@ -31,6 +31,7 @@ function memesFor(visitor: Visitor, clock: { t: number }, away = { on: false }) 
     now: () => clock.t,
     timers: { setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0, clearInterval() {} },
   })
+  memes.listen()
   return { memes, played, notes, away }
 }
 
@@ -68,8 +69,8 @@ test('away drops memes, throws and reactions for that viewer only', async () => 
   const sender = memesFor(host, clock), away = memesFor(guest, clock, { on: true })
   const landed: unknown[] = [], shown: unknown[] = [], notes: string[] = []
   const base = { room: guest.room, isAway: () => true, now: () => clock.t }
-  createThrowables({ ...base, nameOf: () => 'Lucas', notify: text => notes.push(text), onLand: (...args) => landed.push(args) })
-  createReactions({ ...base, onShow: (...args) => shown.push(args) })
+  createThrowables({ ...base, nameOf: () => 'Lucas', notify: text => notes.push(text), onLand: (...args) => landed.push(args) }).listen()
+  createReactions({ ...base, onShow: (...args) => shown.push(args) }).listen()
   away.memes.fire('faaah')
   expect(away.notes).toEqual([AWAY])
   expect(away.played).toEqual([])
@@ -85,7 +86,7 @@ test('a throw lands on the tile it was aimed at, and the target is told who hit 
   const { host, guest } = await pair(), clock = { t: 0 }
   const landed: unknown[][] = [], notes: string[] = [], mine: unknown[][] = []
   const thrower = createThrowables({ room: host.room, isAway: () => false, nameOf: () => '?', notify() {}, onLand: (...args) => mine.push(args), now: () => clock.t })
-  createThrowables({ room: guest.room, isAway: () => false, nameOf: () => 'Lucas', notify: text => notes.push(text), onLand: (...args) => landed.push(args), now: () => clock.t })
+  createThrowables({ room: guest.room, isAway: () => false, nameOf: () => 'Lucas', notify: text => notes.push(text), onLand: (...args) => landed.push(args), now: () => clock.t }).listen()
   const target = host.state.members[0].id
   thrower.throwAt(target, 'chinelo', 1.4, 0.25)
   thrower.throwAt(target, 'ovo', 0.5, 0.5)
@@ -104,7 +105,7 @@ test('reactions float on the target tile and are rate limited per sender', async
   const { host, guest } = await pair(), clock = { t: 0 }
   const shown: unknown[][] = []
   const reactions = createReactions({ room: host.room, isAway: () => false, onShow() {}, now: () => clock.t })
-  createReactions({ room: guest.room, isAway: () => false, onShow: (...args) => shown.push(args), now: () => clock.t })
+  createReactions({ room: guest.room, isAway: () => false, onShow: (...args) => shown.push(args), now: () => clock.t }).listen()
   reactions.react('me', '😂')
   host.room.broadcast({ t: 'react', e: '💀', target: host.room.toWire('me') })
   host.room.broadcast({ t: 'react', e: '👍' as never, target: host.room.toWire('me') })

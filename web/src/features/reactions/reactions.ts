@@ -19,18 +19,17 @@ export function createReactions(options: ReactionsOptions) {
   const { room, isAway, onShow, now = Date.now } = options
   const own = ownGate(OWN_GAP_MS, now), senders = senderGate(SENDER_GAP_MS, now)
 
-  const unsubscribe = room.onMessage('react', (message, from) => {
-    if (isAway() || !senders(from)) return
-    onShow(room.fromWire(message.target), message.e)
-  })
-
   return {
     react(key: TileKey, reaction: Reaction) {
       if (isAway() || !own()) return
       room.broadcast({ t: 'react', e: reaction, target: room.toWire(key) })
       onShow(key, reaction)
     },
-    dispose: unsubscribe,
+    /** Starts showing what the room sends; returns the function that stops. */
+    listen: () => room.onMessage('react', (message, from) => {
+      if (isAway() || !senders(from)) return
+      onShow(room.fromWire(message.target), message.e)
+    }),
   }
 }
 export type Reactions = ReturnType<typeof createReactions>

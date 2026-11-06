@@ -101,6 +101,8 @@ export function Tile(props: TileProps) {
         onPlaying={() => setPlaying(true)}
         className={cn('size-full', screen ? 'object-contain' : 'object-cover', mine && !screen && mirror && '-scale-x-100', !playing && 'opacity-0')}
       />
+      {/* Throwables and reactions draw here: above the video, below the chips and buttons. */}
+      <div data-fx="" className="zo-layer pointer-events-none absolute inset-0 overflow-hidden" />
       {!playing && <div className="absolute inset-0 grid place-items-center text-text-2"><span className="spinner" /></div>}
 
       {diagnostics && !thumbnail && (

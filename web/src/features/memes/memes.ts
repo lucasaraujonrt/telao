@@ -28,7 +28,8 @@ export interface Memes {
   /** Called with each meme that plays, yours or someone else's, so its button can flash. */
   onPlay(listener: (key: MemeKey) => void): () => void
   fire(key: MemeKey): void
-  dispose(): void
+  /** Starts playing what the room sends; returns the function that stops. */
+  listen(): () => void
 }
 
 export function createMemes(options: MemesOptions): Memes {
@@ -43,8 +44,6 @@ export function createMemes(options: MemesOptions): Memes {
     playListeners.forEach(listener => listener(key))
     notify(`${from === 'me' ? 'Você' : nameOf(from)}: ${labelOf(key) ?? label ?? 'meme'}`)
   }
-  const unsubscribe = room.onMessage('meme', (message, from) => play(message.k, from, message.label))
-
   const setCooling = (next: boolean) => { cooling = next; listeners.forEach(listener => listener()) }
 
   return {
@@ -60,10 +59,13 @@ export function createMemes(options: MemesOptions): Memes {
       room.broadcast(label ? { t: 'meme', k: key, label } : { t: 'meme', k: key })
       play(key, 'me')
     },
-    dispose() {
-      unsubscribe()
-      if (cooldown !== undefined) timers.clearTimeout(cooldown)
-      listeners.clear(); playListeners.clear()
+    listen() {
+      const unsubscribe = room.onMessage('meme', (message, from) => play(message.k, from, message.label))
+      return () => {
+        unsubscribe()
+        if (cooldown !== undefined) timers.clearTimeout(cooldown)
+        if (cooling) setCooling(false)
+      }
     },
   }
 }

@@ -27,13 +27,6 @@ export function createThrowables(options: ThrowablesOptions) {
   const { room, isAway, nameOf, notify, onLand, now = Date.now } = options
   const own = ownGate(OWN_GAP_MS, now), senders = senderGate(SENDER_GAP_MS, now)
 
-  const unsubscribe = room.onMessage('throw', (message, from) => {
-    if (isAway() || !senders(from)) return
-    const key = room.fromWire(message.target)
-    onLand(key, message.item, message.x, message.y)
-    if (mine(key)) notify(`${nameOf(from)} te acertou ${HIT[message.item]}`)
-  })
-
   return {
     /** Throws at a tile, unless you are away or threw less than 300 ms ago. */
     throwAt(key: TileKey, item: Item, x: number, y: number) {
@@ -42,7 +35,13 @@ export function createThrowables(options: ThrowablesOptions) {
       room.broadcast({ t: 'throw', item, target: room.toWire(key), x: at(x), y: at(y) })
       onLand(key, item, at(x), at(y))
     },
-    dispose: unsubscribe,
+    /** Starts landing what the room throws; returns the function that stops. */
+    listen: () => room.onMessage('throw', (message, from) => {
+      if (isAway() || !senders(from)) return
+      const key = room.fromWire(message.target)
+      onLand(key, message.item, message.x, message.y)
+      if (mine(key)) notify(`${nameOf(from)} te acertou ${HIT[message.item]}`)
+    }),
   }
 }
 export type Throwables = ReturnType<typeof createThrowables>
