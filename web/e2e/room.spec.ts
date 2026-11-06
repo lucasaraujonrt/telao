@@ -160,10 +160,19 @@ test('three people share a screen and a camera, see each other, and leave', asyn
     expect(after.camera.height).toBeGreaterThan(before.camera.height + 80)
     expect(after.screen.height).toBeLessThan(before.screen.height - 40)
 
+    // The handle also moves from the keyboard.
+    await c.getByRole('separator', { name: 'Tamanho das câmeras' }).focus()
+    for (let i = 0; i < 5; i++) await c.keyboard.press('ArrowDown')
+    const keyed = (await camera.boundingBox())!
+    expect(keyed.height).toBeLessThan(after.camera.height - 10)
+    for (let i = 0; i < 3; i++) await c.keyboard.press('ArrowUp')
+    const saved = (await camera.boundingBox())!
+    expect(saved.height).toBeGreaterThan(keyed.height + 5)
+
     await c.reload()
     await c.getByRole('button', { name: 'Entrar na sala' }).click()
     await expectTiles(c, { mine: [], screens: 1, cameras: 1 })
-    await expect.poll(async () => Math.round((await camera.boundingBox())!.height)).toBe(Math.round(after.camera.height))
+    await expect.poll(async () => Math.round((await camera.boundingBox())!.height)).toBe(Math.round(saved.height))
     await expect(people(a)).toHaveCount(3, { timeout: 45_000 })
   })
 

@@ -279,7 +279,7 @@ Theater mode ("Destaque" in the UI) focuses one tile. A single click on a grid t
 ||                                                                        ||
 ||                                                                        ||
 ||  [▭][▭][▭]  other tiles, 96 px                                          ||
-||                 ( [● Ao vivo 12:04 ▾] [📷▾] [🔇] [⚙] [⤡] )              ||
+||           ( [● Ao vivo 12:04 ▾] [📷▾] [🔇] [⚙] | [Grade|Destaque] )      ||
 |+------------------------------------------------------------------------+|
 +--------------------------------------------------------------------------+
 ```
@@ -336,7 +336,7 @@ All components come from shadcn/ui on Base UI (`npx shadcn@latest init -b base`)
 | Camera, effect | Core: `startCamera()`, `stopCamera()`, `setCameraEffect(effect)`, `snapshot.camera` |
 | Rename | Core: `setName(name)`, `snapshot.name` |
 | Away | Core: `setAway(away)`, `snapshot.away`, `member.away` |
-| Theater focus, fullscreen, page hidden | Core is told: `setViewing({ hidden, focus })` |
+| Theater focus, fullscreen, page hidden, tiles drawn small | Core is told: `setViewing({ hidden, focus, thumbnails })` |
 | Diagnostics values | Core: `sampleStats()` every 2 s while the overlay is on |
 | Leave | Core: `leave()` |
 | Per-tile mute and volume, deafen all | UI only (the `<video>` elements) |
