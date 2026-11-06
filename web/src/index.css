@@ -262,3 +262,16 @@
     animation: spin 800ms linear infinite !important;
   }
 }
+
+/* A grid cell fits a 16:9 tile inside whatever box the grid gives it. */
+.fit-cell {
+  container-type: size;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+}
+.fit-tile {
+  width: min(100cqw, calc(100cqh * 16 / 9));
+  aspect-ratio: 16 / 9;
+}
